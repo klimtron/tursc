@@ -85,6 +85,7 @@ abstract class Base_Customizer {
 	 */
 	public function init() {
 		add_action( 'customize_register', array( $this, 'register_controls_callback' ) );
+		add_action( 'customize_register', array( $this, 'after_controls_registered' ), PHP_INT_MAX );
 	}
 
 	/**
@@ -104,6 +105,11 @@ abstract class Base_Customizer {
 		$this->change_controls();
 		$this->register_partials();
 	}
+
+	/**
+	 * After all controls are registered.
+	 */
+	public function after_controls_registered() {}
 
 	/**
 	 * Function that should be extended to add customizer controls.
@@ -262,7 +268,6 @@ abstract class Base_Customizer {
 	 */
 	public function add_panel( Panel $panel ) {
 		array_push( $this->panels_to_register, $panel );
-
 	}
 
 	/**
@@ -351,7 +356,7 @@ abstract class Base_Customizer {
 				[
 					'label'           => esc_html__( 'Boxed layout', 'neve' ),
 					'section'         => $settings['section'],
-					'type'            => 'neve_toggle_control',
+					'type'            => $id === 'post_cover_title' ? 'hidden' : 'neve_toggle_control',
 					'priority'        => $settings['priority'],
 					'active_callback' => array_key_exists( 'toggle_active_callback', $settings ) ? $settings['toggle_active_callback'] : '__return_true',
 				],
@@ -387,34 +392,27 @@ abstract class Base_Customizer {
 			}
 			$color_live_refresh_settings = [
 				'template' => $template,
-			];
-		}
-
-		if ( neve_is_new_skin() ) {
-			$padding_live_refresh_settings = [
-				'cssVar' => array(
-					'vars'       => '--padding',
-					'selector'   => $settings['boxed_selector'],
-					'responsive' => true,
-				),
-			];
-
-			$background_live_refresh_settings = [
-				'cssVar' => array(
-					'vars'     => '--bgcolor',
+				'cssVar'   => array(
+					'vars'     => '--color',
 					'selector' => $settings['boxed_selector'],
 				),
 			];
-
-			if ( $has_text_color ) {
-				$color_live_refresh_settings = [
-					'cssVar' => array(
-						'vars'     => '--color',
-						'selector' => $settings['boxed_selector'],
-					),
-				];
-			}
 		}
+
+		$padding_live_refresh_settings = [
+			'cssVar' => array(
+				'vars'       => '--padding',
+				'selector'   => $settings['boxed_selector'],
+				'responsive' => true,
+			),
+		];
+
+		$background_live_refresh_settings = [
+			'cssVar' => array(
+				'vars'     => '--bgcolor',
+				'selector' => $settings['boxed_selector'],
+			),
+		];
 
 		$this->add_control(
 			new Control(
@@ -426,6 +424,7 @@ abstract class Base_Customizer {
 				],
 				[
 					'label'                 => esc_html__( 'Section padding', 'neve' ),
+					'type'                  => $id === 'post_cover_title' ? 'hidden' : 'neve_spacing',
 					'section'               => $settings['section'],
 					'input_attrs'           => [
 						'units' => [ 'px', 'em', 'rem' ],
@@ -478,7 +477,7 @@ abstract class Base_Customizer {
 						'section'               => $settings['section'],
 						'priority'              => $settings['priority'],
 						'live_refresh_selector' => true,
-						'live_refresh_css_prop' => $color_live_refresh_settings, // @phpstan-ignore-line
+						'live_refresh_css_prop' => $color_live_refresh_settings,
 						'active_callback'       => array_key_exists( 'active_callback', $settings ) ? $settings['active_callback'] : false,
 					],
 					'Neve\Customizer\Controls\React\Color'

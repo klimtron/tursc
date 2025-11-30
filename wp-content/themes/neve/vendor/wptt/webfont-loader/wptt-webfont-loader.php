@@ -180,10 +180,16 @@ if ( ! class_exists( 'WPTT_WebFont_Loader' ) ) {
 		 */
 		public function get_styles() {
 
-			// If we already have the local file, return its contents.
-			$local_stylesheet_contents = $this->get_local_stylesheet_contents();
-			if ( $local_stylesheet_contents ) {
-				return $local_stylesheet_contents;
+			//If the content path changed delete local fonts
+			if ( get_site_option( 'wptt_neve_last_content_path' , false ) !== $this->get_base_path() ) {
+				delete_site_option( 'downloaded_font_files' );
+				$this->delete_fonts_folder();
+			} else {
+				// If we already have the local file, return its contents.
+				$local_stylesheet_contents = $this->get_local_stylesheet_contents();
+				if ( $local_stylesheet_contents ) {
+					return $local_stylesheet_contents;
+				}
 			}
 
 			// Get the remote URL contents.
@@ -308,6 +314,18 @@ if ( ! class_exists( 'WPTT_WebFont_Loader' ) ) {
 					// Get the filename.
 					$filename  = basename( wp_parse_url( $url, PHP_URL_PATH ) );
 					$font_path = $folder_path . '/' . $filename;
+					/**
+					 * In Typekit, the filename will always be the same. We also need to check for query vars in their URLs.
+					 * They provide this font variation description that we can use https://github.com/typekit/fvd
+					 */
+					$queries = parse_url( $url, PHP_URL_QUERY );
+					if ( ! empty( $queries ) ) {
+						$query_args = array();
+						parse_str( $queries, $query_args );
+						if ( array_key_exists( 'fvd', $query_args ) ) {
+							$font_path .= $query_args['fvd'];
+						}
+					}
 
 					// Check if the file already exists.
 					if ( file_exists( $font_path ) ) {
@@ -361,6 +379,7 @@ if ( ! class_exists( 'WPTT_WebFont_Loader' ) ) {
 					}
 				}
 				update_site_option( 'downloaded_font_files', $stored );
+				update_site_option( 'wptt_neve_last_content_path', $this->get_base_path() );
 			}
 
 			return $stored;
@@ -431,6 +450,7 @@ if ( ! class_exists( 'WPTT_WebFont_Loader' ) ) {
 				// We're using array_flip here instead of array_unique for improved performance.
 				$result[ $font_family ] = array_flip( array_flip( $result[ $font_family ] ) );
 			}
+
 			return $result;
 		}
 

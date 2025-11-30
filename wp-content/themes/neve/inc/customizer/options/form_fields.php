@@ -54,6 +54,7 @@ class Form_Fields extends Base_Customizer {
 					'description_hidden' => true,
 					'description'        => __( 'Customize the general design of the form elements across the site.', 'neve' ) . ' ' . neve_external_link( 'https://docs.themeisle.com/article/1341-neve-form-fields', 'Learn More' ),
 					'title'              => esc_html__( 'Form Fields', 'neve' ),
+					'panel'              => 'neve_layout',
 				]
 			)
 		);
@@ -233,13 +234,7 @@ class Form_Fields extends Base_Customizer {
 				[
 					'sanitize_callback' => [ $this, 'sanitize_spacing_array' ],
 					'transport'         => $this->selective_refresh,
-					'default'           => neve_is_new_skin() ? false : [
-						'top'    => '',
-						'right'  => '',
-						'left'   => '',
-						'bottom' => '',
-						'unit'   => 'px',
-					],
+					'default'           => false,
 				],
 				[
 					'label'                 => esc_html__( 'Border Radius', 'neve' ),
@@ -402,7 +397,7 @@ class Form_Fields extends Base_Customizer {
 					'input_attrs'           => array(
 						'disable_transform'      => true,
 						'default_is_empty'       => true,
-						'size_units'             => [ 'px', 'em' ],
+						'size_units'             => [ 'px', 'em', 'rem' ],
 						'weight_default'         => 'none',
 						'size_default'           => array(
 							'suffix'  => array(
@@ -503,7 +498,7 @@ class Form_Fields extends Base_Customizer {
 					'section'               => $this->section_id,
 					'input_attrs'           => [
 						'default_is_empty'       => true,
-						'size_units'             => [ 'px', 'em' ],
+						'size_units'             => [ 'px', 'em', 'rem' ],
 						'weight_default'         => 'none',
 						'size_default'           => [
 							'suffix'  => [

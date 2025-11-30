@@ -63,8 +63,21 @@ class Pagination extends Base_View {
 			$per_page = 100;
 		}
 
-		$args['posts_per_page']      = $per_page;
-		$args['post_type']           = 'post';
+		/**
+		 * If homepage is set to 'A static page', there will be a parameter inside the query named 'pagename'.
+		 * That parameter is the title of the blog page and because of it the WP_Query will return 0 posts.
+		 * Here, we unset it. We can't reset the query because we can lose search parameters for example.
+		 */
+		if ( array_key_exists( 'pagename', $args ) ) {
+			unset( $args['pagename'] );
+		}
+
+		$args['posts_per_page'] = $per_page;
+
+		if ( empty( $args['post_type'] ) ) {
+			$args['post_type'] = 'post';
+		}
+
 		$args['paged']               = $request['page_number'];
 		$args['ignore_sticky_posts'] = 1;
 		$args['post_status']         = 'publish';
@@ -87,7 +100,7 @@ class Pagination extends Base_View {
 		$query = new \WP_Query( $args );
 		if ( $query->have_posts() ) {
 			ob_start();
-			while ( $query->have_posts() ) {
+			while ( $query->have_posts() ) { // @phpstan-ignore-line impure WP function
 				$query->the_post();
 
 				/**
@@ -105,7 +118,7 @@ class Pagination extends Base_View {
 				 * @since 2.11 in the /index.php
 				 */
 				do_action( 'neve_loop_entry_after' );
-			}
+			} // @phpstan-ignore-next-line code is reachable
 			wp_reset_postdata();
 			$output = ob_get_contents();
 			ob_end_clean();

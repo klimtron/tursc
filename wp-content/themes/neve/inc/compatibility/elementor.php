@@ -9,6 +9,8 @@
 namespace Neve\Compatibility;
 
 use Neve\Core\Dynamic_Css;
+use Neve\Core\Settings\Config;
+use Neve\Core\Settings\Mods;
 
 /**
  * Class Elementor
@@ -47,13 +49,23 @@ class Elementor extends Page_Builder_Base {
 	private static $elementor_conditions_manager = false;
 
 	/**
+	 * Custom global colors theme mod value
+	 *
+	 * @var array|null
+	 */
+	private static $custom_global_colors = null;
+
+	/**
 	 * Init function.
 	 */
 	public function init() {
 		if ( ! defined( 'ELEMENTOR_VERSION' ) ) {
 			return;
 		}
-		add_action( 'neve_dynamic_style_output', array( $this, 'fix_links' ), 99, 2 );
+
+		self::$custom_global_colors = self::$custom_global_colors ?? Mods::get( Config::MODS_GLOBAL_CUSTOM_COLORS, [] );
+
+		add_filter( 'neve_dynamic_style_output', array( $this, 'fix_links' ), 99, 2 );
 		add_action( 'wp', array( $this, 'add_theme_builder_hooks' ) );
 		add_action( 'elementor/editor/before_enqueue_scripts', array( $this, 'maybe_set_page_template' ), 1 );
 		add_filter( 'rest_request_after_callbacks', [ $this, 'alter_global_colors_in_picker' ], 999, 3 );
@@ -67,6 +79,34 @@ class Elementor extends Page_Builder_Base {
 		* That gives full capability to Elementor and removes Neve Pro customizations.
 		*/
 		add_filter( 'neve_pro_run_wc_view', array( $this, 'suspend_woo_customizations' ), 10, 2 );
+		add_action( 'elementor/theme/register_locations', array( $this, 'register_elementor_locations' ) );
+		add_filter( 'elementor/document/config', array( $this, 'elementor_document_config' ), 10, 2 );
+	}
+
+	/**
+	 * Register Elementor locations.
+	 * 
+	 * @since 4.1 
+	 * 
+	 * @see https://developers.elementor.com/docs/themes/migrating-themes-with-hooks/
+	 * 
+	 * @param \ElementorPro\Modules\ThemeBuilder\Classes\Locations_Manager $elementor_theme_manager Elementor object.
+	 */
+	public function register_elementor_locations( $elementor_theme_manager ) {
+		$elementor_theme_manager->register_location(
+			'header',
+			[
+				'hook'         => 'neve_do_header',
+				'remove_hooks' => [ 'hfg_header_render' ],
+			]
+		);
+		$elementor_theme_manager->register_location(
+			'footer',
+			[
+				'hook'         => 'neve_do_footer',
+				'remove_hooks' => [ 'hfg_footer_render' ],
+			]
+		);
 	}
 
 	/**
@@ -82,7 +122,7 @@ class Elementor extends Page_Builder_Base {
 		/**
 		 * Filters the css with base vars for elementor colors.
 		 *
-		 * @param array $css Single post page components.
+		 * @param string $css Single post page components.
 		 *
 		 * @since 3.1.0
 		 */
@@ -112,6 +152,11 @@ class Elementor extends Page_Builder_Base {
 			'nvc1'              => 'nv-c-1',
 			'nvc2'              => 'nv-c-2',
 		];
+
+		// introduce custom global colors
+		foreach ( array_keys( self::$custom_global_colors ) as $slug ) {
+			$rest_to_slugs[ str_replace( '-', '', $slug ) ] = $slug;
+		}
 
 		$rest_id = substr( $route, strrpos( $route, '/' ) + 1 );
 
@@ -156,6 +201,10 @@ class Elementor extends Page_Builder_Base {
 			'nv-c-1'              => __( 'Extra Color 1', 'neve' ),
 			'nv-c-2'              => __( 'Extra Color 2', 'neve' ),
 		];
+
+		foreach ( self::$custom_global_colors as $slug => $args ) {
+			$label_map[ $slug ] = $args['label'];
+		}
 
 		$colors = $this->get_current_palette_colors();
 		$data   = $response->get_data();
@@ -319,8 +368,13 @@ class Elementor extends Page_Builder_Base {
 		$active     = $customizer['activePalette'];
 		$palettes   = $customizer['palettes'];
 		$palette    = $palettes[ $active ];
+		$colors     = $palette['colors'];
 
-		return $palette['colors'];
+		foreach ( self::$custom_global_colors as $slug => $args ) {
+			$colors[ $slug ] = $args['val'];
+		}
+
+		return $colors;
 	}
 
 	/**
@@ -402,10 +456,6 @@ class Elementor extends Page_Builder_Base {
 			foreach ( $template_conditions_arr  as $condition_path ) {
 				$condition_parts = explode( '/', $condition_path );
 
-				if ( empty( $condition_parts ) ) {
-					continue;
-				}
-
 				if ( $condition_parts[0] !== 'include' ) {
 					continue;
 				}
@@ -457,6 +507,37 @@ class Elementor extends Page_Builder_Base {
 	}
 
 	/**
+	 * Detect if a page is using the checkout widget.
+	 *
+	 * @return bool
+	 */
+	public static function is_elementor_checkout() {
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			return false;
+		}
+		if ( ! function_exists( 'is_checkout' ) && ! is_checkout() ) {
+			return false;
+		}
+		if ( ! class_exists( '\ElementorPro\Plugin', false ) ) {
+			return false;
+		}
+		if ( array_key_exists( 'checkout', self::$cache_cp_has_template ) ) {
+			return self::$cache_cp_has_template['checkout'];
+		}
+
+		$is_elementor_checkout = false;
+		$page_id               = get_the_ID();
+		$elementor_data        = get_post_meta( $page_id, '_elementor_data', true );
+		if ( ! empty( $elementor_data ) && is_string( $elementor_data ) && ( strpos( $elementor_data, 'woocommerce-checkout-page' ) !== false ) ) {
+			$is_elementor_checkout = true;
+		}
+
+		self::$cache_cp_has_template['checkout'] = $is_elementor_checkout;
+
+		return self::$cache_cp_has_template['checkout'];
+	}
+
+	/**
 	 * Conditionally suspense Woocommerce moditifications by Neve Pro if Elementor template applies to current page.
 	 *
 	 * @param  bool   $should_load Current loading status.
@@ -486,5 +567,27 @@ class Elementor extends Page_Builder_Base {
 		$elementor_overrides = self::is_elementor_template( $elementor_template_type );
 
 		return ! $elementor_overrides;
+	}
+
+	/**
+	 * Allow Post Content widget to be shown in the panel for neve_custom_layouts post type.
+	 *
+	 * @param array<string, mixed> $data The original data that needs to be saved.
+	 * @param int                  $post_id The ID of the post for which the data is being saved.
+	 *
+	 * @return array<string, mixed> The modified data with the additional configuration.
+	 */
+	public function elementor_document_config( $data, $post_id ) {
+		if ( 'neve_custom_layouts' === get_post_type( $post_id ) ) {
+			$data['panel'] = array(
+				'widgets_settings' => array(
+					'theme-post-content' => array(
+						'show_in_panel' => true,
+					),
+				),
+			);
+		}
+
+		return $data;
 	}
 }

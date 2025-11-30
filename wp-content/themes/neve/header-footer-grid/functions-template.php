@@ -20,7 +20,7 @@ use HFG\Core\Magic_Tags;
  *
  * @param string $builder_name The builder id. (header|footer|page_header etc.).
  *
- * @return Abstract_Builder instance, such as HFG\Core\Builder\Header|Neve_Pro\Modules\Header_Footer_Grid\Builder\Page_Header|HFG\Core\Builder\Footer
+ * @return Abstract_Builder[]|Abstract_Builder instance, such as HFG\Core\Builder\Header|Neve_Pro\Modules\Header_Footer_Grid\Builder\Page_Header|HFG\Core\Builder\Footer
  */
 function get_builder( $builder_name = '' ) {
 	return Main::get_instance()->get_builder( $builder_name );
@@ -51,10 +51,15 @@ function render_components( $builder_name = '', $device = null ) {
  * @param string $builder_name The builder id.
  * @param null   $component_id The component id.
  *
- * @return Core\Components\Abstract_Component
+ * @return false|Core\Components\Abstract_Component
  */
 function current_component( $builder_name = '', $component_id = null ) {
 	$builder = get_builder( $builder_name );
+
+	// if returns array of Abstract_Builder instances.
+	if ( ! ( $builder instanceof Abstract_Builder ) ) {
+		return false;
+	}
 
 	return $builder->get_component( $component_id );
 }
@@ -84,9 +89,9 @@ function current_row( $builder_name = '' ) {
 /**
  * Get setting value of a certain component.
  *
- * @param string $id           Id of component setting.
- * @param null   $default      Default value, otherwise use the one when the setting was defined.
- * @param null   $component_id Component id.
+ * @param string      $id           Id of component setting.
+ * @param mixed       $default      Default value, otherwise use the one when the setting was defined.
+ * @param string|null $component_id Component id.
  *
  * @return mixed Component settings.
  */
@@ -249,6 +254,56 @@ function media_from_array( $array = array(), $size = 'full' ) {
  */
 function parse_dynamic_tags( $string ) {
 	return Magic_Tags::get_instance()->do_magic_tags( $string );
+}
+
+
+/**
+ * Check if the footer builder is empty.
+ * 
+ * @param string $device The device type (mobile or desktop).
+ * @return bool
+ */
+function is_footer_builder_empty( $device = 'mobile' ) {
+	if ( ! in_array( $device, [ 'mobile', 'desktop' ] ) ) {
+		return false;
+	}
+
+	$data = get_theme_mod( 'hfg_footer_layout_v2', wp_json_encode( neve_hfg_footer_settings() ['builder'] ) );
+
+	if ( empty( $data ) ) {
+		return true;
+	}
+
+	return is_builder_empty_for_device( $data, $device );
+}
+
+/**
+ * Check if the builder data is empty.
+ * 
+ * @param string $data The builder data.
+ * @param string $device The device type (mobile or desktop).
+ * @return bool
+ */
+function is_builder_empty_for_device( $data, $device ) {
+	$decoded = json_decode( $data, true );
+
+	if ( ! is_array( $decoded ) ) {
+		return true;
+	}
+
+	if ( empty( $decoded[ $device ] ) ) {
+		return true;
+	}
+
+	foreach ( $decoded[ $device ] as $row => $slots ) {
+		foreach ( $slots as $slot => $components ) {
+			if ( ! empty( $components ) ) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 

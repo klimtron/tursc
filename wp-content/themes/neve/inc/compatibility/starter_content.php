@@ -36,8 +36,8 @@ class Starter_Content {
 				$this,
 				'register_listener',
 			],
-			3,
-			99
+			99,
+			3
 		); // starter content does not provide means of adding post meta so we need to tweak it.
 
 		if ( ! is_customize_preview() ) {
@@ -65,6 +65,18 @@ class Starter_Content {
 		if ( get_post_type( $post_id ) !== 'page' ) {
 			return $value;
 		}
+
+		$post = get_post( $post_id );
+
+		if ( ! $post ) {
+			return $value;
+		}
+
+		if ( $post->post_name === self::BLOG_SLUG ) {
+			return $value;
+		}
+
+
 		if ( $meta_key === 'neve_meta_disable_title' ) {
 			return 'on';
 		}
@@ -134,6 +146,34 @@ class Starter_Content {
 				'object'    => 'page',
 				'object_id' => '{{' . self::BLOG_SLUG . '}}',
 			],
+			'page_contact'         => [
+				'type'      => 'post_type',
+				'object'    => 'page',
+				'object_id' => '{{' . self::CONTACT . '}}',
+			],
+		];
+
+		$footer_nav_items = [
+			'home'         => [
+				'type'      => 'post_type',
+				'object'    => 'page',
+				'object_id' => '{{' . self::HOME_SLUG . '}}',
+			],
+			'page_blog'    => [
+				'type'      => 'post_type',
+				'object'    => 'page',
+				'object_id' => '{{' . self::BLOG_SLUG . '}}',
+			],
+			'page_about'   => [
+				'type'      => 'post_type',
+				'object'    => 'page',
+				'object_id' => '{{' . self::ABOUT_SLUG . '}}',
+			],
+			'page_contact' => [
+				'type'      => 'post_type',
+				'object'    => 'page',
+				'object_id' => '{{' . self::CONTACT . '}}',
+			],
 		];
 
 		$content = [
@@ -142,12 +182,15 @@ class Starter_Content {
 					'primary' => [
 						'items' => $nav_items,
 					],
+					'footer'  => [
+						'items' => $footer_nav_items,
+					],
 				],
 			'options'     => [
 				'page_on_front'  => '{{' . self::HOME_SLUG . '}}',
 				'page_for_posts' => '{{' . self::BLOG_SLUG . '}}',
 				'show_on_front'  => 'page',
-				'blogname'       => 'Web Agency Demo 1',
+				'blogname'       => 'Marketing Agency',
 			],
 			'theme_mods'  => require __DIR__ . '/starter-content/theme-mods.php',
 			'attachments' => array(
@@ -171,7 +214,6 @@ class Starter_Content {
 				],
 			],
 		];
-
 
 		return apply_filters( 'neve_starter_content', $content );
 	}

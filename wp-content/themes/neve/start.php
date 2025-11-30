@@ -30,6 +30,15 @@ function neve_run() {
 			'sparks'                    => true,
 			'advanced_search_component' => true,
 			'submenu_style'             => true,
+			'blog_hover_effects'        => true,
+			'hfg_d_search_iconbutton'   => true, // Dynamic icon selection or a button for search components
+			'restrict_content'          => true,
+			'theme_dedicated_menu'      => true, // Theme uses the new menu location for settings and sub-pages.
+			'track'                     => true, // Track theme usage.
+			'menu_icon_svg'             => true,
+			'custom_payment_icons'      => true,
+			'nested_ordering_control'   => true,
+			'component_style_filter'    => true, // @see Abstract_Component->add_style() method.
 		]
 	);
 	$vendor_file = trailingslashit( get_template_directory() ) . 'vendor/autoload.php';

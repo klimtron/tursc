@@ -53,8 +53,6 @@ final class Manager {
 		 */
 		add_action( 'init', array( $this, 'neve_register_meta' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'meta_sidebar_script_enqueue' ) );
-
-		add_action( 'save_post', array( $this, 'set_page_width' ), 10, 2 );
 	}
 
 	/**
@@ -118,10 +116,12 @@ final class Manager {
 	 * Register meta box to control layout on pages and posts.
 	 */
 	public function add() {
-		$post_type         = 'Neve';
+		$post_type_label   = 'Neve';
 		$post_type_from_db = get_post_type();
-		if ( $post_type_from_db ) {
-			$post_type = ucfirst( $post_type_from_db );
+		$post_type_object  = get_post_type_object( $post_type_from_db );
+		
+		if ( $post_type_object && isset( $post_type_object->labels->name ) ) {
+			$post_type_label = $post_type_object->labels->name;
 		}
 
 		add_meta_box(
@@ -129,7 +129,7 @@ final class Manager {
 			sprintf(
 			/* translators: %s - post type */
 				__( '%s Settings', 'neve' ),
-				$post_type
+				$post_type_label
 			),
 			array( $this, 'render_metabox' ),
 			array( 'post', 'page', 'product' ),
@@ -146,7 +146,7 @@ final class Manager {
 				sprintf(
 				/* translators: %s - post type */
 					__( '%s Settings', 'neve' ),
-					$post_type
+					$post_type_label
 				),
 				array( $this, 'render_metabox_notice' ),
 				Supported_Post_Types::get( 'block_editor' ),
@@ -185,12 +185,13 @@ final class Manager {
 	public function render_metabox_notice() {
 		echo '<div class="nv-meta-notice-wrapper">';
 		echo '<h4>' . esc_html__( 'Page Settings are now accessible from the top bar', 'neve' ) . '</h4>';
+
 		printf(
 		/* translators: %1$s - Keyboard shortcut.   %2&s - svg icon */
 			esc_html__( 'Click the %1$s icon in the top bar or use the keyboard shortcut ( %2$s ) to customise the layout settings for this page', 'neve' ),
 			apply_filters( 'ti_wl_theme_is_localized', false ) ?
-				'<span class="dashicons dashicons-hammer"></span>' :
-				'<svg width="17" height="24" viewBox="0 0 17 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				neve_kses_svg( $this->get_metabox_icon() ) : //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				'<svg class="neve-logo" width="17" height="24" viewBox="0 0 17 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<path d="M4.77822 10.2133V19.3287H0.118347V0.802224C0.118347 0.712594 0.145598 0.649854 0.200099 0.614002C0.254601 0.578149 0.354519 0.622964 0.499857 0.748446L12.1359 10.2133V1.04422H16.7958V19.5976C16.7958 19.7051 16.7685 19.7724 16.714 19.7992C16.6595 19.8261 16.5596 19.7768 16.4143 19.6514L4.77822 10.2133Z"/>
 				<rect x="0.118347" y="22.3334" width="16.6774" height="1.51613"/>
 				</svg>',
@@ -200,24 +201,31 @@ final class Manager {
 	}
 
 	/**
+	 * Get the metabox layout.
+	 * 
+	 * @return string
+	 */
+	private function get_metabox_icon() {
+		return apply_filters( 'neve_metabox_wl_icon_markup', '<span class="dashicons dashicons-hammer"></span>' );
+	}
+
+	/**
 	 * Enqueue scripts and styles.
-	 *
-	 * @return bool
 	 */
 	public function enqueue() {
 
 		if ( $this->is_gutenberg_active() ) {
-			return false;
+			return;
 		}
 
 		$screen = get_current_screen();
 
 		if ( ! is_object( $screen ) ) {
-			return false;
+			return;
 		}
 
 		if ( $screen->base !== 'post' ) {
-			return false;
+			return;
 		}
 
 		wp_register_script( 'neve-metabox', NEVE_ASSETS_URL . 'js/build/all/metabox.js', array( 'jquery' ), NEVE_VERSION, true );
@@ -225,8 +233,6 @@ final class Manager {
 		wp_localize_script( 'neve-metabox', 'neveMetabox', $this->get_localization() );
 
 		wp_enqueue_script( 'neve-metabox' );
-
-		return true;
 	}
 
 	/**
@@ -332,8 +338,12 @@ final class Manager {
 	 * Register the metabox sidebar.
 	 */
 	public function meta_sidebar_script_enqueue() {
-		global $post_type;
-		if ( ! in_array( $post_type, Supported_Post_Types::get( 'block_editor' ) ) ) {
+		global $post_type, $pagenow;
+
+		$do_not_load_on = [ 'widgets.php', 'customize.php' ];
+
+		// $post_type returns "page" on widgets.php and on customize.php so we need to check this separately.
+		if ( in_array( $pagenow, $do_not_load_on, true ) || ! in_array( $post_type, Supported_Post_Types::get( 'block_editor' ) ) ) {
 			return false;
 		}
 
@@ -354,7 +364,7 @@ final class Manager {
 		$container    = $post_type === 'post' ? Mods::get( Config::MODS_SINGLE_POST_CONTAINER_STYLE, 'contained' ) : Mods::get( Config::MODS_DEFAULT_CONTAINER_STYLE, 'contained' );
 		$editor_width = Mods::get( Config::MODS_CONTAINER_WIDTH );
 
-		$advanced_layout = Mods::get( Config::MODS_ADVANCED_LAYOUT_OPTIONS, neve_is_new_skin() );
+		$advanced_layout = Mods::get( Config::MODS_ADVANCED_LAYOUT_OPTIONS, true );
 
 		$single_width  = $post_type === 'post' ?
 			Mods::get( Config::MODS_SINGLE_CONTENT_WIDTH, $this->sidebar_layout_width_default( Config::MODS_SINGLE_CONTENT_WIDTH ) ) :
@@ -367,6 +377,7 @@ final class Manager {
 
 		$post_elements_default_order = $this->get_post_elements_default_order();
 		$show_avatar                 = $this->get_author_avatar_state();
+		$reading_time                = $this->get_reading_time_state();
 
 		$post_type_details = get_post_type_object( $post_type );
 		$post_type_label   = esc_html( $post_type_details->labels->singular_name );
@@ -374,17 +385,19 @@ final class Manager {
 		$localized_data = apply_filters(
 			'neve_meta_sidebar_localize_filter',
 			array(
-				'actions'              => array(
+				'actions'                 => array(
 					'neve_meta_content_width' => array(
 						'container' => $container,
 						'editor'    => $editor_width,
 						'content'   => $content_width,
 					),
 				),
-				'elementsDefaultOrder' => $post_elements_default_order,
-				'avatarDefaultState'   => $show_avatar,
-				'postTypeLabel'        => $post_type_label,
-				'isCoverLayout'        => Layout_Single_Post::is_cover_layout(),
+				'elementsDefaultOrder'    => $post_elements_default_order,
+				'avatarDefaultState'      => $show_avatar,
+				'readingTimeDefaultState' => $reading_time,
+				'postTypeLabel'           => $post_type_label,
+				'isCoverLayout'           => Layout_Single_Post::is_cover_layout(),
+				'icon'                    => $this->get_metabox_icon(),
 			)
 		);
 		wp_localize_script(
@@ -407,7 +420,7 @@ final class Manager {
 	 * @return string
 	 */
 	private function get_post_elements_default_order() {
-		$default_order = $this->post_ordering();
+		$default_order = $this->get_v4_defaults( 'neve_layout_single_post_elements_order', $this->post_ordering() );
 
 		$content_order = get_theme_mod( 'neve_layout_single_post_elements_order', wp_json_encode( $default_order ) );
 		if ( ! is_string( $content_order ) ) {
@@ -440,37 +453,29 @@ final class Manager {
 	}
 
 	/**
-	 * Set page width to 100% if it's a new page.
+	 * Get the value of Reading Time visibility from customizer.
 	 *
-	 * @param int      $post_id Post id.
-	 * @param \WP_Post $post Post object.
+	 * @return bool
 	 */
-	public function set_page_width( $post_id, $post ) {
-		if ( neve_is_new_skin() ) {
-			return;
+	private function get_reading_time_state() {
+		$meta_fields = get_theme_mod( 'neve_single_post_meta_fields', self::get_default_single_post_meta_fields() );
+
+		if ( is_string( $meta_fields ) ) {
+			$meta_fields = json_decode( $meta_fields, true );
 		}
 
-		$parent_id = wp_is_post_revision( $post_id );
-		if ( $parent_id ) {
-			$post_id = $parent_id;
+		if ( ! is_array( $meta_fields ) ) {
+			return false;
 		}
 
-		// Only set for post_type = page!
-		if ( 'page' !== $post->post_type ) {
-			return;
-		}
-
-		$checkout_was_updated = get_post_meta( $post_id, 'neve_checkout_updated', true );
-		// assign default value
-		$checkout_was_updated = ( $checkout_was_updated !== '' ) ? $checkout_was_updated : 'no';
-
-		if ( Main::is_new_page() || ( Main::is_checkout() && $checkout_was_updated === 'no' ) ) {
-			update_post_meta( $post_id, 'neve_meta_sidebar', 'full-width' );
-			update_post_meta( $post_id, 'neve_meta_enable_content_width', 'on' );
-			update_post_meta( $post_id, 'neve_meta_content_width', 100 );
-			if ( Main::is_checkout() ) {
-				update_post_meta( $post_id, 'neve_checkout_updated', 'yes' );
+		foreach ( $meta_fields as $args ) {
+			if ( ! array_key_exists( 'slug', $args ) || ! array_key_exists( 'visibility', $args ) || $args['slug'] !== 'reading' ) {
+				continue;
 			}
+
+			return $args['visibility'] === 'yes';
 		}
+
+		return false;
 	}
 }

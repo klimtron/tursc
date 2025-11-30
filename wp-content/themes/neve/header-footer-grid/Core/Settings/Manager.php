@@ -104,12 +104,12 @@ class Manager {
 	/**
 	 * Load settings/control group in customizer.
 	 *
-	 * @param string|null                $group Group to load.
-	 * @param \WP_Customize_Manager|null $customize_manager Manager object.
+	 * @param string|null           $group Group to load.
+	 * @param \WP_Customize_Manager $customize_manager Manager object.
 	 *
 	 * @return \WP_Customize_Manager Customizer object.
 	 */
-	public function load( $group = null, \WP_Customize_Manager $customize_manager = null ) {
+	public function load( $group, \WP_Customize_Manager $customize_manager ) {
 		static $core_transports = [
 			'refresh'     => true,
 			'postMessage' => true,
@@ -122,7 +122,7 @@ class Manager {
 			}
 			$arguments = self::$settings[ $id ];
 
-			if ( isset( $arguments['live_refresh_css_prop'] ) && isset( $arguments['live_refresh_css_prop']['cssVar'] ) && neve_is_new_skin() ) {
+			if ( isset( $arguments['live_refresh_css_prop'] ) && isset( $arguments['live_refresh_css_prop']['cssVar'] ) ) {
 				$transport = 'postMessage';
 			} else {
 				$transport = isset( $core_transports[ $arguments['transport'] ] ) ? $arguments['transport'] : $this->handle_transport( $arguments['transport'], $id );
@@ -327,7 +327,7 @@ class Manager {
 	 *
 	 * @param array $arguments Component arguments.
 	 *
-	 * @return bool;
+	 * @return bool
 	 */
 	public function add( $arguments = array() ) {
 
@@ -394,9 +394,7 @@ class Manager {
 						$array[ $arguments['type'] ] = [];
 					}
 
-					if ( isset( $arguments['live_refresh_selector'] ) ) {
-						$args['selector'] = $arguments['live_refresh_selector'];
-					}
+					$args['selector'] = $arguments['live_refresh_selector'];
 
 					if ( isset( $arguments['live_refresh_css_prop'] ) ) {
 						$args['additional'] = $arguments['live_refresh_css_prop'];

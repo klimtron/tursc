@@ -14,6 +14,7 @@ use Neve\Core\Settings\Mods;
 use Neve\Customizer\Controls\React\Documentation_Section;
 use Neve\Customizer\Controls\React\Instructions_Section;
 use Neve\Customizer\Base_Customizer;
+use Neve\Customizer\Controls\Separator_Section;
 use Neve\Customizer\Controls\Simple_Upsell;
 use Neve\Customizer\Types\Control;
 use Neve\Customizer\Types\Panel;
@@ -30,7 +31,6 @@ class Main extends Base_Customizer {
 		$this->register_types();
 		$this->add_main_panels();
 		$this->change_controls();
-		$this->add_skin_switcher();
 	}
 
 	/**
@@ -53,7 +53,11 @@ class Main extends Base_Customizer {
 		$panels = array(
 			'neve_layout'     => array(
 				'priority' => 25,
-				'title'    => __( 'Layout', 'neve' ),
+				'title'    => __( 'Global', 'neve' ),
+			),
+			'neve_blog'       => array(
+				'priority' => 25,
+				'title'    => __( 'Blog', 'neve' ),
 			),
 			'neve_typography' => array(
 				'priority' => 35,
@@ -77,7 +81,7 @@ class Main extends Base_Customizer {
 				$this->wpc,
 				'neve_typography_quick_links',
 				array(
-					'priority' => - 100,
+					'priority' => -100,
 					'panel'    => 'neve_typography',
 					'type'     => 'hfg_instructions',
 					'options'  => array(
@@ -109,9 +113,19 @@ class Main extends Base_Customizer {
 				$this->wpc,
 				'neve_documentation',
 				[
-					'priority' => PHP_INT_MAX,
+					'priority' => 10000,
 					'title'    => esc_html__( 'Neve', 'neve' ),
 					'url'      => tsdk_utmify( 'https://docs.themeisle.com/article/946-neve-doc', 'docsbtn' ),
+				]
+			)
+		);
+
+		$this->wpc->add_section(
+			new Separator_Section(
+				$this->wpc,
+				'neve_separator_main_panel',
+				[
+					'priority' => 10010,
 				]
 			)
 		);
@@ -121,62 +135,30 @@ class Main extends Base_Customizer {
 	 * Change controls
 	 */
 	protected function change_controls() {
-		$this->change_customizer_object( 'section', 'static_front_page', 'panel', 'neve_layout' );
-		if ( neve_is_new_skin() ) {
-			// Change default for shop columns WooCommerce option.
-			$this->change_customizer_object( 'setting', 'woocommerce_catalog_columns', 'default', 3 );
-		}
+		$this->change_customizer_object( 'setting', 'woocommerce_catalog_columns', 'default', 3 );
 	}
 
 	/**
-	 * Add the skin switcher.
-	 *
-	 * @return void
-	 * @since 3.0.0
+	 * After all controls are registered, move core root panels and sections to the end of the list.
 	 */
-	private function add_skin_switcher() {
-		// If we started with the new skin this shouldn't show up at all.
-		if ( get_theme_mod( 'neve_had_old_skin' ) === false ) {
-			return;
+	public function after_controls_registered() {
+
+		$sections = [
+			'static_front_page' => 10600,
+			'custom_css'        => 10610,
+		];
+
+		$panels = [
+			'nav_menus' => 10500,
+			'widgets'   => 10510,
+		];
+
+		foreach ( $sections as $section_id => $section_priority ) {
+			$this->change_customizer_object( 'section', $section_id, 'priority', $section_priority );
 		}
 
-		// If we're not using the new builder. We don't show the switch & section.
-		if ( ! neve_is_new_builder() ) {
-			return;
+		foreach ( $panels as $panel_id => $panel_priority ) {
+			$this->change_customizer_object( 'panel', $panel_id, 'priority', $panel_priority );
 		}
-
-		// If the pro version exists but it's incompatible, we don't show the switch.
-		if ( defined( 'NEVE_PRO_VERSION' ) ) {
-			if ( ! neve_pro_has_support( 'skinv2' ) ) {
-				return;
-			}
-		}
-
-		$section = 'neve_style_section';
-
-		$this->add_section(
-			new Section(
-				$section,
-				[
-					'priority' => 201,
-					'title'    => esc_html__( 'Style', 'neve' ),
-				]
-			)
-		);
-
-		$this->add_control(
-			new Control(
-				'neve_new_skin',
-				[
-					'transport'         => 'postMessage',
-					'sanitize_callback' => 'sanitize_text_field',
-					'default'           => 'new',
-				],
-				[
-					'type'    => 'neve_skin_switcher',
-					'section' => $section,
-				]
-			)
-		);
 	}
 }

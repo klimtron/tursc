@@ -1,3 +1,458 @@
+##### [Version 4.2.1](https://github.com/Codeinwp/neve/compare/v4.2.0...v4.2.1) (2025-11-26)
+
+- Fixed redundant compatibility notice appearing in plugin screen
+
+#### [Version 4.2.0](https://github.com/Codeinwp/neve/compare/v4.1.4...v4.2.0) (2025-11-26)
+
+New Features
+
+- Moved Scroll to Top module to the Free version
+- New Style Book option in Customizer to visualize and easily access global site styling
+- Added Guided Setup for new users to help optimize a fresh website
+- Added option for pre-loading local fonts
+- Integrated installation of Login Customizer, Cookie Notice, Duplicate Page, and Custom Fonts/Scripts modules
+- New Maintenance and Coming Soon custom layouts [PRO]
+- Admin Dashboard Customizer module to personalize the WordPress admin experience (Menu, Admin Bar, Custom Pages) [Agency]
+- Included premium WP Landing Kit wordpress plugin [Agency]
+
+Enhancements
+
+- Added conditional logic for the Scroll to Top button
+- Added controls for number of products and columns in WooCommerce Upsells section
+- Infinite Scroll logic updated to load posts from the same category
+- Add option to display Page Header on Search Results page
+- Mobile product gallery automatically switches to horizontal slider
+- Added support for Featured Image block inside Custom Layouts
+- Made Pro components visible in Header/Footer builder inserter
+- Displaying plan name next to license key in dashboard
+- Added direct documentation links to dashboard modules
+- Improved Global Header Settings and Custom Layouts conditional logic dropdown styling
+- Improve Customizer Search placement and UI
+- Added Elementor Post Content widget in Single Post Custom Layout
+
+Bug Fixes
+
+- Sortable items in Customizer are now accessible via keyboard
+- Fixed issue with Custom Post Type layout options not applying to taxonomy archives
+
+##### [Version 4.1.4](https://github.com/Codeinwp/neve/compare/v4.1.3...v4.1.4) (2025-09-10)
+
+- Fixed border color not working properly for Secondary Buttons
+- Fixed the issue related to changing the license key after White Module was enabled [PRO]
+- Updated dependencies
+
+##### [Version 4.1.3](https://github.com/Codeinwp/neve/compare/v4.1.2...v4.1.3) (2025-07-25)
+
+- Fixed broken notice layout on checkout page
+- Updated dependencies
+
+##### [Version 4.1.2](https://github.com/Codeinwp/neve/compare/v4.1.1...v4.1.2) (2025-05-30)
+
+- Fixed styling options of the Menu Icon
+- Updated dependencies
+
+##### [Version 4.1.1](https://github.com/Codeinwp/neve/compare/v4.1.0...v4.1.1) (2025-05-22)
+
+- [Fix] Tested up to notice appearing when used with Pro version above 4.1
+- [Fix] Clicking the dots in the top right of the editor throws an error
+
+#### [Version 4.1.0](https://github.com/Codeinwp/neve/compare/v4.0.1...v4.1.0) (2025-05-22)
+
+- [Feat] Style WordPress core login block
+- [Feat] Improved WooCommerce My Account page styling
+- [Feat] Adds color setting for headings
+- [Feat] Adds image size options to single post thumbnail
+- [Feat] Improve footer builder UX
+- [Feat] Mobile footer inherits desktop components by default if layout is empty
+- [Feat] Sparks integration improvements
+- [Feat] Rework Menu Icon component options
+- [Feat] Improve styling and UX for onboarding notice
+- [Fix] Mobile navigation sidebar not working when no Navigation menu is added in header
+- [Fix] Starter sites broken link redirection
+- [Fix] Blog pagination page number input styling
+- [Fix] Quote block styling inconsistency between editor & frontend
+- [Fix] Navigation dropdown caret icon size control not working on mobile/tablet
+- [Fix] License card UI
+- [Fix] Gallery for WooCommerce plugin conflict
+- [Fix] Center Footer Copyright position on mobile
+- [Fix] Edge-case in WooCommerce checkout when session is not set and throwing a fatal error
+- [Fix] Elementor Pro Header & Footer builder breaking theme markup
+- [Fix] Deprecated notice when using PHP 8.4
+- [Fix] Edge-case where modal is going off-screen in the dashboard
+- [Fix] Starter content issue causing footer builder problems and missing components on mobile
+- Improve WooCommerce single product layout styling
+- Adds shortcut to clarify header background controls
+- Adds description to the Neve editor options panel to clarify that settings override customizer options
+- Small customizer UX improvements
+- Update dependencies
+
+##### [Version 4.0.1](https://github.com/Codeinwp/neve/compare/v4.0.0...v4.0.1) (2025-02-03)
+
+- [Feat] Reorganised main customizer panels for better UX
+- [Fix] hide Super Page Cache plugin from dashboard if its pro version is installed
+- Improved UI/UX for the Get Started section in the dashboard page
+- Improved style of customizer sections
+- Updated starter content to use theme defaults for H2 typography
+- Updated Google Fonts and dependencies
+
+#### [Version 4.0.0](https://github.com/Codeinwp/neve/compare/v3.8.16...v4.0.0) (2025-01-30)
+
+- [Feat] Redesigned theme dashboard with a modern interface and intuitive organization for easier site customization
+- [Feat] Enhanced blog design and customization with new features and better-organized settings
+- [Feat] Reviewed and improved all starter sites in our library for better quality and performance
+- [Feat] New streamlined onboarding experience to help you build your site faster
+- [Feat] Restructured theme options for better clarity and ease of use
+- [Feat] Added informative notices to help identify starter content vs your content
+- Improved customizer ordering controls UX
+- Improved customizer performance
+- Update theme description to reflect current capabilities better
+
+##### [Version 3.8.16](https://github.com/Codeinwp/neve/compare/v3.8.15...v3.8.16) (2024-12-06)
+
+- Added a NEW Online Course starter site [PRO]
+- Fixed issue with background color and text color
+- Fixed the customizer broken layout introduced by the LearnPress plugin
+
+##### [Version 3.8.15](https://github.com/Codeinwp/neve/compare/v3.8.14...v3.8.15) (2024-11-22)
+
+ - Fixed issues from the latest release
+
+##### [Version 3.8.14](https://github.com/Codeinwp/neve/compare/v3.8.13...v3.8.14) (2024-11-21)
+
+- Fixed compatibility issue with WordPress 6.7 that was throwing warnings on translations
+- Fixed WooCoomerce icon display issue on notices
+
+##### [Version 3.8.13](https://github.com/Codeinwp/neve/compare/v3.8.12...v3.8.13) (2024-11-12)
+
+- Fixed submenu text wrapping issue on mobile
+- Updated Google Fonts and dependencies
+
+##### [Version 3.8.12](https://github.com/Codeinwp/neve/compare/v3.8.11...v3.8.12) (2024-10-29)
+
+- Added a new starter site
+- Fixed PHP warning in template_parts.php
+- Fixed compatibility issue with the TranslatePress plugin
+- Fixed the plugin install issue on a multisite installation
+- Fixed lightbox issue with alignment control
+- Added support for a new custom layout magic tag current_single_content [PRO]
+- Added support for Messenger social media sharing [PRO]
+
+##### [Version 3.8.11](https://github.com/Codeinwp/neve/compare/v3.8.10...v3.8.11) (2024-08-14)
+
+- Fixed Breadcrumb NavXT integration
+- Fixed Neve and Easy Digital Downloads compatibility: Custom Layout on Download Archive was being misapplied for Tags & Taxonomy
+- Improved translations coverage
+
+##### [Version 3.8.10](https://github.com/Codeinwp/neve/compare/v3.8.9...v3.8.10) (2024-07-31)
+
+- Fixed duplicate ID issue with secondary navigation menu
+- Fixed translations support on dashboard pages
+
+##### [Version 3.8.9](https://github.com/Codeinwp/neve/compare/v3.8.8...v3.8.9) (2024-07-04)
+
+- Fixed an issue with the permalinks of the new starter site menu items
+
+##### [Version 3.8.8](https://github.com/Codeinwp/neve/compare/v3.8.7...v3.8.8) (2024-07-03)
+
+- Fixed duplication of Bank Details on the WooCommerce Order-Received Page
+- Fixed text overlapping in Onboarding notice for multiple languages
+- Fixed schema issues in the footer
+- Fixed CSS syntax error causing W3C validation error
+- Updated Google Fonts
+- Updated the thumbnail for the default starter site
+- Added new default Marketing Agency starter site content
+
+##### [Version 3.8.7](https://github.com/Codeinwp/neve/compare/v3.8.6...v3.8.7) (2024-04-27)
+
+- Updated assets
+
+##### [Version 3.8.6](https://github.com/Codeinwp/neve/compare/v3.8.5...v3.8.6) (2024-04-05)
+
+### Bug Fixes
+- **Fixed menu items** where long item names with a dropdown on the mobile were overlapping with the dropdown button.
+### Improvements
+- **Updated internal dependencies**
+
+##### [Version 3.8.5](https://github.com/Codeinwp/neve/compare/v3.8.4...v3.8.5) (2024-04-01)
+
+### Improvements
+- **Updated internal dependencies**
+- **Update Google Fonts**​:​ Get the newest Google fonts from the public font library.
+
+##### [Version 3.8.4](https://github.com/Codeinwp/neve/compare/v3.8.3...v3.8.4) (2024-03-29)
+
+### Bug Fixes
+- Fix an issue with footer element IDs not being unique.
+
+### Improvements
+- Improved Formbricks
+- Updated internal dependencies
+
+##### [Version 3.8.3](https://github.com/Codeinwp/neve/compare/v3.8.2...v3.8.3) (2024-03-12)
+
+### Bug Fixes:
+- **Fix excerpt more** filter interaction inside the Gutenberg when excerpt block is used.
+- **Fix mega menu** opening on tablet devices.
+
+### Improvements
+- **Updated internal dependencies**
+-  **Update Google Fonts**​:​ Get the newest Google fonts from the public font library.
+- **Feature usage tracking improvements** for Header/Footer Builder in the Customizer.
+
+##### [Version 3.8.2](https://github.com/Codeinwp/neve/compare/v3.8.1...v3.8.2) (2024-02-22)
+
+### Bug Fixes:
+- **Improved Frombricks survey**
+- **Fix display of item description**: on regular menu items inside the navigation the description will not be shown now.
+
+### Improvements
+- **Updated internal dependencies**
+- **Update Google Fonts**​:​ Get the newest Google fonts from the public font library.
+- **Improved Upsell messaging**: Information should be more clear on what each features provides and where it can be found.
+- Updated support for future Black Friday campaigns.
+
+##### [Version 3.8.1](https://github.com/Codeinwp/neve/compare/v3.8.0...v3.8.1) (2024-01-30)
+
+### Improvements
+- **Updated internal dependencies**
+
+#### [Version 3.8.0](https://github.com/Codeinwp/neve/compare/v3.7.5...v3.8.0) (2024-01-30)
+
+### New Features
+- **Enable full HTML5 theme support**: All HTML5 theme support features are now enabled. 
+- **Added X (former Twitter) and Apple Music logo for Social Icons**: Updated the social icons list.
+- **Added mobile support for the footer in Header Footer Grid builder**: Now users can control and build the layout for the footer when viewed on mobile. 
+
+### Bug Fixes
+- **WooCommerce notices styles for v8.5**: Fixed a bug with the notice styles introduced by WooCommerce v8.5
+- **Single Post title alignment**: when using full width layout the alignment should work as expected now.
+- **Improve SEO site-title tag for homepage**: Improved SEO site-title tag on the homepage.
+- **Missing translations for the Customizer.**
+- **Sub-menu item long text**: Fixed the sub-menu item when text is too long, now it will wrap as expected.
+- **Fix the opening of Search Icon in Mobile Sidebar**
+- **Fix position of search input**: on minimal when space is restricted
+- **Scrollable mobile header builder droppable zone**: Previously when having too many items it would become hard to manage.
+
+### Improvements
+- **Add feature usage observer**
+- **Update internal dependencies**
+- **Support changes for Custom payment icons**
+- **Support changes for the Custom SVG menu icon**
+- **Add integration for Formbricks survey** inside the Dashboard.
+- **Update Google Fonts**:​ Get the newest Google fonts from the public font library.
+
+##### [Version 3.7.5](https://github.com/Codeinwp/neve/compare/v3.7.4...v3.7.5) (2023-12-22)
+
+### Bug Fixes
+- **Secondary menu** alignment on mobile
+- **WooCommerce 8.3** compatibility improvements
+- **WooCommerce** breadcrumbs on mobile
+
+### Improvements
+- **Update Google Fonts:** Get the newest Google fonts from the public font library.
+- **Updated dependencies** using the latest dependencies.
+
+##### [Version 3.7.4](https://github.com/Codeinwp/neve/compare/v3.7.3...v3.7.4) (2023-11-29)
+
+### Bug Fixes
+**Header Footer Builder Layout Fix:** We updated the builder to work with the latest version of WordPress 6.4.
+**Related posts excerpt:** The excerpt from the related post will now correctly show the proper post excerpt.
+**Infinite scroll:** Properly load custom post-type posts on the archive page.
+**Infinite scroll post order:** The order is now preserved when loading posts for the infinite scroll.
+**Improved Gutenberg support:** More default Guttenberg block settings are now supported.
+**Blog list alignment:** The alignment now behaves correctly when the thumbnail is missing.
+
+### Improvements
+**Update Google Fonts:** Get the newest Google fonts from the public font library.
+**E2E testing:** Improved end-to-end testing.
+**SDK update:** The latest SDK is now available.
+
+##### [Version 3.7.3](https://github.com/Codeinwp/neve/compare/v3.7.2...v3.7.3) (2023-10-23)
+
+### New Features
+- **Black Friday Preparations**: Get ready for exciting Black Friday updates and offers!
+
+### Improvements
+- **Update Google Fonts**: Get the freshest updates from the public font library from Google.
+
+##### [Version 3.7.2](https://github.com/Codeinwp/neve/compare/v3.7.1...v3.7.2) (2023-10-05)
+
+### Bug Fixes
+- **Changelog Formatting**: Addressed PHP dashboard notices caused by the updated changelog format
+
+##### [Version 3.7.1](https://github.com/Codeinwp/neve/compare/v3.7.0...v3.7.1) (2023-10-05)
+
+### Improvements
+- **Google Fonts**: Updated the Google Fonts library
+- **Onboarding UX**: Enhanced the onboarding process for a smoother user experience.
+- **WooCommerce Compatibility Check**: Verified the compatibility with WooCommerce 8.1 to ensure there are no issues.
+- **Elementor Compatibility Check**: Verified the compatibility with Elementor 3.17 to ensure there are no issues.
+
+### Bug Fixes
+- **Accessibility Fix**: Addressed the accessibility issue flagged on PageSpeed Insights, which was triggered by the absence of the tagline alongside the site title in the aria-label attribute.
+- **Light Mode Logo Correction**: Fixed the issue of the dark-mode logo being displayed inappropriately during the first visit in light mode.
+- **Onboarding redirection**: Fixed the issue where users got redirected to the old onboarding if they were installing the Cloud Templates & Patterns collection plugin from the dashboard
+
+#### [Version 3.7.0](https://github.com/Codeinwp/neve/compare/v3.6.7...v3.7.0) (2023-09-25)
+
+- [Feat] Improve the UX by decreasing the opacity of the Editor Title if the disabled title toggle from Neve Options inside the editor is active
+- [Feat] New option for the Logo component to control the font size
+- [Fix] Images not loading in the mega menu with AMP enabled
+- [Fix] Missing text domain for a string
+- [Fix] Translations are not applying for some particular strings
+- [Fix] Access in the dashboard for admin users on multisite environments
+- Remove any remaining legacy skin code
+
+##### [Version 3.6.7](https://github.com/Codeinwp/neve/compare/v3.6.6...v3.6.7) (2023-08-22)
+
+- [Fix] Addressed a json_decode issue in utilities.php that could potentially arise depending on the value from the database
+- [Fix] Fixed the way error messages are displayed within the error notice on the WooCommerce My Account page
+- [Fix] Confusing palette when changing it in the customizer
+- [Fix] Errors on the widgets page with WordPress 6.3
+- [Fix] Install plugin buttons appear on the About us page in the dashboard for users that do not have permission to install plugins
+- Increase WordPress minimum required version to 5.5
+- Update Google Fonts
+
+##### [Version 3.6.6](https://github.com/Codeinwp/neve/compare/v3.6.5...v3.6.6) (2023-08-03)
+
+- [Fix] Solve customizer permissions on multisite
+- [Fix] Add aria-label on the dropdown of the sidebar menu
+- [Fix] Incorrect author displayed on sticky posts with Feedzy Pro plugin
+- Introducing a new presentational tab dedicated to Otter within the About Us page of Neve Dashboard
+- Improve compatibility with WPML
+
+##### [Version 3.6.5](https://github.com/Codeinwp/neve/compare/v3.6.4...v3.6.5) (2023-07-17)
+
+- [Fix] Deprecated notice in HFG Footer
+- [Fix] About page display when using Whitelabel
+- [Fix] AMP compatibility with Standard Template Mode
+- [Fix] React script loop on Starter Sites page
+- Update Google Fonts
+- Update SDK
+
+##### [Version 3.6.4](https://github.com/Codeinwp/neve/compare/v3.6.3...v3.6.4) (2023-06-16)
+
+- [Fix] reported error for non-admin
+
+##### [Version 3.6.3](https://github.com/Codeinwp/neve/compare/v3.6.2...v3.6.3) (2023-06-15)
+
+- [Fix] Customizer link location
+
+##### [Version 3.6.2](https://github.com/Codeinwp/neve/compare/v3.6.1...v3.6.2) (2023-06-15)
+
+- [Feat] Dedicated Settings page
+- [Fix] Header cart icon color with multiple headers
+- [Fix] Sidebar Gradient
+- [Fix] Toggle the aria-pressed ARIA for the menu caret
+- [Fix] Alignment for mobile nav when set to center
+- Added filter for welcome discount
+- Update Visual Regression base images
+- Update Google Fonts
+
+##### [Version 3.6.1](https://github.com/Codeinwp/neve/compare/v3.6.0...v3.6.1) (2023-05-30)
+
+- [Fix] Solve compatibility check
+- Update SDK
+
+#### [Version 3.6.0](https://github.com/Codeinwp/neve/compare/v3.5.8...v3.6.0) (2023-05-29)
+
+- [Feat] Add relative CSS unit support for font size controls in the customizer
+- [Feat] Granular Heading Font Family Controls
+- [Feat] Manage top and bottom margins for pages and posts 
+- [Fix] Accessibility warning for the site title
+- [Fix] Hover Skin Mode not working for the Footer Menu
+- [Fix] Improve the accessibility of the mobile menu by adding an aria-expanded attribute
+- [Fix] Button padding is different when using the EM unit
+- [Fix] Missing margin between heading and content inside the starter content
+- [Fix] Customizer sidebar flickers when changing the container control to 100%
+- [Fix] Breadcrumbs not available on the frontend
+- [Fix] Highlight the parent menu item when a submenu is active
+- [Fix] Items Hover Color does not apply to the active menu item
+- [Fix] Updated font size for product tabs h2
+- Upsell banners in HFG
+- Improve the E2E test coverage
+- Update Google Fonts
+- Update Cloud Templates and Patterns collection banner image
+
+##### [Version 3.5.8](https://github.com/Codeinwp/neve/compare/v3.5.7...v3.5.8) (2023-04-19)
+
+- [Fix] Tag cloud style when using classic widgets was different than the tag cloud block
+- [Fix] Visual issue for the color picker
+- Update Google Fonts
+- Support chages for Neve Pro
+
+##### [Version 3.5.7](https://github.com/Codeinwp/neve/compare/v3.5.6...v3.5.7) (2023-04-06)
+
+- [Feat] Dynamic Icon Selection and Optional Button for HFG Search Components
+- [Fix] Dot style separator not visible inside the editor
+- [Fix] Improve compatibility with WPML and Neve
+- [Fix] Gradient issue in WordPress 6.2
+- [Fix] Path for the logo inside the dashboard
+- [Fix] Active and hover colors of the secondary menu items
+- [Fix] Hover skin options for the secondary menu
+- Improve the compatibility with PPOM plugin
+
+##### [Version 3.5.6](https://github.com/Codeinwp/neve/compare/v3.5.5...v3.5.6) (2023-03-22)
+
+- [Feat] Add Open in new tab option for HFG button components
+- [Fix] Page title appears twice on WooCommerce pages
+- [Fix] The menu closing icon is duplicated with the slide-down style
+- [Fix] Incompatibility issue with Gutenberg plugin 15.2.0
+- [Fix] Reply button in comments not aligned correctly for short comments
+- Improve the presentation of Neve Pro Custom Layout module
+- Improve the development process
+
+##### [Version 3.5.5](https://github.com/Codeinwp/neve/compare/v3.5.4...v3.5.5) (2023-03-13)
+
+- Removed legacy skin
+
+##### [Version 3.5.4](https://github.com/Codeinwp/neve/compare/v3.5.3...v3.5.4) (2023-03-01)
+
+- [Feat] Allow custom colors to be selected inside the customizer
+- [Fix] Proper indentation for comments
+- [Fix] Inconsistent space between avatar and text in comments
+- [Fix] Add margin-bottom for images with no caption
+- Update Google Fonts
+
+##### [Version 3.5.3](https://github.com/Codeinwp/neve/compare/v3.5.2...v3.5.3) (2023-02-16)
+
+- [Fix] Alternative Layout control not visible inside the customizer
+- [Fix] Menu item not aligned with caret
+- Better inform about the features for WooCommerce available in Neve PRO
+
+##### [Version 3.5.2](https://github.com/Codeinwp/neve/compare/v3.5.1...v3.5.2) (2023-02-15)
+
+- [Feat] Add a filter for the author post meta
+- [Feat] Improve Accessibility. Use the tab switch to submenu items only if the arrow is clicked on focus 
+- [Fix] Layout issue with Elementor Pro checkout widget
+- [Fix] PHP 8.2 Support
+- [Fix] Vertical alignment for cover posts
+- [Fix] Missing padding inside the customizer for the button appearance control
+- [Fix] Infinite scroll for translated blogs
+- Update Google Fonts
+- Improve the development process
+- Improve performance by moving the menu sidebar opening behavior to inline styles
+
+##### [Version 3.5.1](https://github.com/Codeinwp/neve/compare/v3.5.0...v3.5.1) (2023-01-30)
+
+- Update the tested up to version for Neve Pro
+
+#### [Version 3.5.0](https://github.com/Codeinwp/neve/compare/v3.4.10...v3.5.0) (2023-01-30)
+
+- [Feat] Custom global colors - [Learn more](https://docs.themeisle.com/article/1314-global-colors-in-neve#custom-color)
+- [Feat] Font pairs inside the typography section - [Learn more](https://docs.themeisle.com/article/1340-neve-typography#font-presets)
+- [Feat] Full Site Editing for Neve - [Learn more](https://docs.themeisle.com/article/1774-neve-fse)
+- [Fix] Display featured post only on the first page
+- [Fix] Issue with specific customizer settings imported
+- [Fix] Color picker issue on small screens
+- Update Google Fonts
+
+##### [Version 3.4.10](https://github.com/Codeinwp/neve/compare/v3.4.9...v3.4.10) (2023-01-09)
+
+- [Fix] Installation of Super Page Cache for Cloudflare recommended plugin not working
+- [Fix] Make body_class hook signature similar to WP core one; props [@mi5t4n](https://github.com/mi5t4n) for contribution
+- [Fix] One click install for Cloud Templates & Patterns collection
+
 ##### [Version 3.4.9](https://github.com/Codeinwp/neve/compare/v3.4.8...v3.4.9) (2022-12-15)
 
 - [Fix] Revert menu changes to fix regressions

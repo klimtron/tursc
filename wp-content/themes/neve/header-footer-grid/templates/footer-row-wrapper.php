@@ -21,6 +21,21 @@ $row_classes = [
 	'footer-' . $row_index,
 ];
 
+$mobile_empty = is_footer_builder_empty( 'mobile' );
+
+if ( $device === 'mobile' && $mobile_empty ) {
+	return;
+}
+
+if ( $device === 'desktop' && ! $mobile_empty ) { 
+	$row_classes[] = 'hide-on-mobile hide-on-tablet';
+}
+
+if ( $device === 'mobile' ) {
+	$row_classes[] = 'hide-on-desktop';
+}
+	
+
 $row_classes[] = row_setting( Abstract_Builder::LAYOUT_SETTING );
 $row_classes   = apply_filters( 'hfg_footer_row_classes', $row_classes, $row_index );
 
@@ -37,7 +52,7 @@ if ( is_customize_preview() ) {
 $row_wrapper_classes = join( ' ', $row_wrapper_classes );
 ?>
 <div class="<?php echo esc_attr( join( ' ', $row_classes ) ); ?>"
-	id="cb-row--footer-<?php echo esc_attr( $row_index ); ?>"
+	id="cb-row--footer-<?php echo esc_attr( $device ); ?>-<?php echo esc_attr( $row_index ); ?>"
 	data-row-id="<?php echo esc_attr( $row_index ); ?>" data-show-on="<?php echo esc_attr( $device ); ?>">
 	<div
 		class="footer--row-inner footer-<?php echo esc_attr( $row_index ); ?>-inner footer-content-wrap">

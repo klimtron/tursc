@@ -10,9 +10,13 @@
 
 namespace Neve\Core;
 
+use Neve\Compatibility\Elementor;
 use Neve\Compatibility\Starter_Content;
 use Neve\Core\Settings\Config;
 use Neve\Core\Settings\Mods;
+use Neve\Core\Dynamic_Css;
+use Neve\Core\Traits\Theme_Mods;
+use Neve\Customizer\Options\Scroll_To_Top;
 
 /**
  * Front end handler class.
@@ -20,6 +24,7 @@ use Neve\Core\Settings\Mods;
  * @package Neve\Core
  */
 class Front_End {
+	use Theme_Mods;
 
 	/**
 	 * Theme setup.
@@ -41,23 +46,27 @@ class Front_End {
 			'width'       => 200,
 		);
 
-		add_theme_support( 'title-tag' );
-		add_theme_support( 'post-thumbnails' );
-		add_theme_support( 'automatic-feed-links' );
-		add_theme_support( 'custom-logo', $logo_settings );
-		add_theme_support( 'html5', array( 'search-form' ) );
-		add_theme_support( 'customize-selective-refresh-widgets' );
-		add_theme_support( 'custom-background', [] );
 		add_theme_support( 'align-wide' );
+		add_theme_support( 'automatic-feed-links' );
+		add_theme_support( 'border' );
+		add_theme_support( 'custom-background', [] );
+		add_theme_support( 'custom-logo', $logo_settings );
+		add_theme_support( 'custom-spacing' );
+		add_theme_support( 'custom-units' );
+		add_theme_support( 'customize-selective-refresh-widgets' );
 		add_theme_support( 'editor-color-palette', $this->get_gutenberg_color_palette() );
-		add_theme_support( 'fl-theme-builder-headers' );
 		add_theme_support( 'fl-theme-builder-footers' );
+		add_theme_support( 'fl-theme-builder-headers' );
 		add_theme_support( 'fl-theme-builder-parts' );
 		add_theme_support( 'header-footer-elementor' );
+		add_theme_support( 'html5', array( 'search-form', 'script', 'style', 'comment-form', 'comment-list', 'gallery', 'caption' ) );
 		add_theme_support( 'lifterlms-sidebars' );
 		add_theme_support( 'lifterlms' );
+		add_theme_support( 'link-color' );
+		add_theme_support( 'post-thumbnails' );
 		add_theme_support( 'service_worker', true );
 		add_theme_support( 'starter-content', ( new Starter_Content() )->get() );
+		add_theme_support( 'title-tag' );
 		add_filter( 'script_loader_tag', array( $this, 'filter_script_loader_tag' ), 10, 2 );
 		add_filter( 'embed_oembed_html', array( $this, 'wrap_oembeds' ), 10, 3 );
 		add_filter( 'video_embed_html', array( $this, 'wrap_jetpack_oembeds' ), 10, 1 );
@@ -75,10 +84,11 @@ class Front_End {
 
 		add_image_size( 'neve-blog', 930, 620, true );
 		add_filter( 'wp_nav_menu_args', array( $this, 'nav_walker' ), 1001 );
-		if ( neve_is_new_skin() ) {
-			add_filter( 'theme_mod_background_color', '__return_empty_string' );
-		}
+		add_filter( 'theme_mod_background_color', '__return_empty_string' );
 		$this->add_woo_support();
+		add_filter( 'neve_dynamic_style_output', array( $this, 'css_global_custom_colors' ), PHP_INT_MAX, 2 );
+
+		add_filter( 'neve_dynamic_style_output', array( $this, 'css_scroll_to_top' ), 99, 2 );
 	}
 
 	/**
@@ -128,6 +138,9 @@ class Front_End {
 			),
 		];
 
+		// Add custom global colors
+		$from_global_colors = array_merge( $from_global_colors, $this->get_global_custom_color_vars() );
+
 		foreach ( $from_global_colors as $slug => $args ) {
 			array_push(
 				$gutenberg_color_palette,
@@ -140,6 +153,23 @@ class Front_End {
 		}
 
 		return array_values( $gutenberg_color_palette );
+	}
+
+	/**
+	 * Returns global custom colors with css vars
+	 *
+	 * @return array[]
+	 */
+	private function get_global_custom_color_vars() {
+		$css_vars = [];
+		foreach ( Mods::get( Config::MODS_GLOBAL_CUSTOM_COLORS, [] ) as $slug => $args ) {
+			$css_vars[ $slug ] = [
+				'label' => $args['label'],
+				'val'   => sprintf( 'var(--%s)', $slug ),
+			];
+		}
+
+		return $css_vars;
 	}
 
 	/**
@@ -292,14 +322,76 @@ class Front_End {
 		$primary_values   = get_theme_mod( Config::MODS_BUTTON_PRIMARY_STYLE, neve_get_button_appearance_default() );
 		$secondary_values = get_theme_mod( Config::MODS_BUTTON_SECONDARY_STYLE, neve_get_button_appearance_default( 'secondary' ) );
 
+		$style = '';
+
 		if (
 			( isset( $primary_values['useShadow'] ) && ! empty( $primary_values['useShadow'] ) ) ||
 			( isset( $primary_values['useShadowHover'] ) && ! empty( $primary_values['useShadowHover'] ) ) ||
 			( isset( $secondary_values['useShadow'] ) && ! empty( $secondary_values['useShadow'] ) ) ||
 			( isset( $secondary_values['useShadowHover'] ) && ! empty( $secondary_values['useShadowHover'] ) )
 		) {
-			wp_add_inline_style( 'neve-style', '.button.button-primary, .is-style-primary .wp-block-button__link {box-shadow: var(--primarybtnshadow, none);} .button.button-primary:hover, .is-style-primary .wp-block-button__link:hover {box-shadow: var(--primarybtnhovershadow, none);} .button.button-secondary, .is-style-secondary .wp-block-button__link {box-shadow: var(--secondarybtnshadow, none);} .button.button-secondary:hover, .is-style-secondary .wp-block-button__link:hover {box-shadow: var(--secondarybtnhovershadow, none);}' );
+			$style .= '.button.button-primary, .is-style-primary .wp-block-button__link {box-shadow: var(--primarybtnshadow, none);} .button.button-primary:hover, .is-style-primary .wp-block-button__link:hover {box-shadow: var(--primarybtnhovershadow, none);} .button.button-secondary, .is-style-secondary .wp-block-button__link {box-shadow: var(--secondarybtnshadow, none);} .button.button-secondary:hover, .is-style-secondary .wp-block-button__link:hover {box-shadow: var(--secondarybtnhovershadow, none);}';
 		}
+
+		foreach ( neve_get_headings_selectors() as $heading_id => $heading_selector ) {
+			$font_family = get_theme_mod( $this->get_mod_key_heading_fontfamily( $heading_id ), '' ); // default value is empty string to be consistent with default customizer control value.
+
+			$css_var = sprintf( '--%1$sfontfamily', $heading_id );
+
+			if ( is_customize_preview() ) {
+				$style .= sprintf( '%s {font-family: var(%s, var(--headingsfontfamily)), var(--nv-fallback-ff);} ', $heading_id, $css_var ); // fallback values for the first page load on the customizer
+				continue;
+			}
+
+			// If font family is inherit, do not add a style for this heading.
+			if ( $font_family === '' ) {
+				continue;
+			}
+
+			$style .= sprintf( '%s {font-family: var(%s);}', $heading_id, $css_var );
+		}
+
+		$style .= $this->get_mobile_menu_styles();
+		$style .= $this->get_static_footer_styles();
+
+		wp_add_inline_style( 'neve-style', Dynamic_Css::minify_css( $style ) );
+	}
+
+	/**
+	 * Showing Menu Sidebar animation css.
+	 * 
+	 * @return string
+	 */
+	private function get_mobile_menu_styles() {
+		$sidebar_animation_css  = '.is-menu-sidebar .header-menu-sidebar { visibility: visible; }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_slide_left .header-menu-sidebar { transform: translate3d(0, 0, 0); left: 0; }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_slide_right .header-menu-sidebar { transform: translate3d(0, 0, 0); right: 0; }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_pull_right .header-menu-sidebar, .is-menu-sidebar.menu_sidebar_pull_left .header-menu-sidebar { transform: translateX(0); }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_dropdown .header-menu-sidebar { height: auto; }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_dropdown .header-menu-sidebar-inner { max-height: 400px; padding: 20px 0; }';
+		$sidebar_animation_css .= '.is-menu-sidebar.menu_sidebar_full_canvas .header-menu-sidebar { opacity: 1; }';
+		$sidebar_animation_css .= '.header-menu-sidebar .menu-item-nav-search:not(.floating) { pointer-events: none; }';
+		$sidebar_animation_css .= '.header-menu-sidebar .menu-item-nav-search .is-menu-sidebar { pointer-events: unset; }';
+
+		return $sidebar_animation_css;
+	}
+
+	/**
+	 * Get static footer styles.
+	 * 
+	 * @return string
+	 */
+	private function get_static_footer_styles() {
+		if ( defined( 'NEVE_PRO_VERSION' ) ) {
+			return '';
+		}
+		
+		return '@media screen and (max-width: 960px) {
+			.builder-item.cr .item--inner {
+				--textalign: center;
+    		--justify: center;
+			}
+		}';
 	}
 
 	/**
@@ -307,12 +399,14 @@ class Front_End {
 	 */
 	private function add_styles() {
 		if ( class_exists( 'WooCommerce', false ) ) {
-			$style_path = neve_is_new_skin() ? 'css/woocommerce' : 'css/woocommerce-legacy';
+			$style_path = 'css/woocommerce';
 
 			wp_register_style( 'neve-woocommerce', NEVE_ASSETS_URL . $style_path . ( ( NEVE_DEBUG ) ? '' : '.min' ) . '.css', array(), apply_filters( 'neve_version_filter', NEVE_VERSION ) );
 			wp_style_add_data( 'neve-woocommerce', 'rtl', 'replace' );
 			wp_style_add_data( 'neve-woocommerce', 'suffix', '.min' );
-			wp_enqueue_style( 'neve-woocommerce' );
+			if ( ! Elementor::is_elementor_checkout() ) {
+				wp_enqueue_style( 'neve-woocommerce' );
+			}
 		}
 
 		if ( class_exists( 'Easy_Digital_Downloads' ) ) {
@@ -326,14 +420,14 @@ class Front_End {
 
 		}
 
-		$style_path = neve_is_new_skin() ? '/style-main-new' : '/assets/css/style-legacy';
+		$style_path = '/style-main-new';
 
 		wp_register_style( 'neve-style', get_template_directory_uri() . $style_path . ( ( NEVE_DEBUG ) ? '' : '.min' ) . '.css', array(), apply_filters( 'neve_version_filter', NEVE_VERSION ) );
 		wp_style_add_data( 'neve-style', 'rtl', 'replace' );
 		wp_style_add_data( 'neve-style', 'suffix', '.min' );
 		wp_enqueue_style( 'neve-style' );
 
-		$mm_path = neve_is_new_skin() ? 'mega-menu' : 'mega-menu-legacy';
+		$mm_path = 'mega-menu';
 
 		wp_register_style( 'neve-mega-menu', get_template_directory_uri() . '/assets/css/' . $mm_path . ( ( NEVE_DEBUG ) ? '' : '.min' ) . '.css', array(), apply_filters( 'neve_version_filter', NEVE_VERSION ) );
 		wp_style_add_data( 'neve-mega-menu', 'rtl', 'replace' );
@@ -371,9 +465,16 @@ class Front_End {
 		}
 
 		if ( class_exists( 'WooCommerce', false ) && is_woocommerce() ) {
-			wp_register_script( 'neve-shop-script', NEVE_ASSETS_URL . 'js/build/modern/shop.js', array(), NEVE_VERSION, true );
+			wp_register_script( 'neve-shop-script', NEVE_ASSETS_URL . 'js/build/modern/shop.js', array( 'jquery', 'wc-single-product' ), NEVE_VERSION, true );
 			wp_enqueue_script( 'neve-shop-script' );
 			wp_script_add_data( 'neve-shop-script', 'async', true );
+			wp_localize_script(
+				'neve-shop-script',
+				'neveShopSlider',
+				array(
+					'isSparkActive' => is_plugin_active( 'sparks-for-woocommerce/sparks-for-woocommerce.php' ),
+				)
+			);
 		}
 
 		if ( $this->should_load_comments_reply() ) {
@@ -459,24 +560,174 @@ class Front_End {
 	 */
 	public function get_strings() {
 		return [
-			'add_item'          => __( 'Add item', 'neve' ),
-			'add_items'         => __( 'Add items by clicking the ones below.', 'neve' ),
-			'all_selected'      => __( 'All items are already selected.', 'neve' ),
-			'page_layout'       => __( 'Page Layout', 'neve' ),
-			'page_title'        => __( 'Page Title', 'neve' ),
-			'upsell_components' => __( 'Upgrade to Neve Pro and unlock all components, including Wish List, Breadcrumbs, Custom Layouts and many more.', 'neve' ),
-			'header_booster'    => esc_html__( 'Header Booster', 'neve' ),
-			'blog_booster'      => esc_html__( 'Blog Booster', 'neve' ),
-			'woo_booster'       => esc_html__( 'WooCommerce Booster', 'neve' ),
-			'custom_layouts'    => esc_html__( 'Custom Layouts', 'neve' ),
-			'white_label'       => esc_html__( 'White Label module', 'neve' ),
-			'scroll_to_top'     => esc_html__( 'Scroll to Top module', 'neve' ),
-			'elementor_booster' => esc_html__( 'Elementor Booster', 'neve' ),
-			'ext_h_description' => esc_html__( 'Extend your header with more components and settings, build sticky/transparent headers or display them conditionally.', 'neve' ),
-			'ctm_h_description' => esc_html__( 'Easily create custom headers and footers as well as adding your own custom code or content in any of the hooks locations.', 'neve' ),
-			'elem_description'  => esc_html__( 'Leverage the true flexibility of Elementor with powerful addons and templates that you can import with just one click.', 'neve' ),
-			'get_pro_cta'       => esc_html__( 'Get the PRO version!', 'neve' ),
-			'opens_new_tab_des' => esc_html__( '(opens in a new tab)', 'neve' ),
+			'add_item'                 => __( 'Add item', 'neve' ),
+			'add_items'                => __( 'Add items by clicking the ones below.', 'neve' ),
+			'all_selected'             => __( 'All items are already selected.', 'neve' ),
+			'page_layout'              => __( 'Page Layout', 'neve' ),
+			'page_title'               => __( 'Page Title', 'neve' ),
+			'upsell_components'        => __( 'Upgrade to Neve Pro and unlock all components, including Wish List, Breadcrumbs, Custom Layouts and many more.', 'neve' ),
+			'header_booster'           => esc_html__( 'Header Booster', 'neve' ),
+			'blog_booster'             => esc_html__( 'Blog Booster', 'neve' ),
+			'woo_booster'              => esc_html__( 'WooCommerce Booster', 'neve' ),
+			'custom_layouts'           => esc_html__( 'Custom Layouts', 'neve' ),
+			'white_label'              => esc_html__( 'White Label module', 'neve' ),
+			'scroll_to_top'            => esc_html__( 'Scroll to Top module', 'neve' ),
+			'elementor_booster'        => esc_html__( 'Elementor Booster', 'neve' ),
+			'ext_h_description'        => esc_html__( 'Extend your header with more components and settings, build sticky/transparent headers or display them conditionally.', 'neve' ),
+			'ctm_h_description'        => esc_html__( 'Easily create custom headers and footers as well as adding your own custom code or content in any of the hooks locations.', 'neve' ),
+			'elem_description'         => esc_html__( 'Leverage the true flexibility of Elementor with powerful addons and templates that you can import with just one click.', 'neve' ),
+			'get_pro_cta'              => esc_html__( 'Get the PRO version!', 'neve' ),
+			'opens_new_tab_des'        => esc_html__( '(opens in a new tab)', 'neve' ),
+			'filter'                   => __( 'Filter', 'neve' ),
+			/* translators: %s - Theme name */
+			'neve_options'             => __( '%s Options', 'neve' ),
+			'migrate_builder_d'        => __( 'Migrating builder data', 'neve' ),
+			'rollback_builder'         => __( 'Rolling back builder', 'neve' ),
+			'remove_old_data'          => __( 'Removing old data', 'neve' ),
+			'customizer_values_notice' => __( 'You must save the current customizer values before running the migration.', 'neve' ),
+			'wrong_reload_notice'      => __( 'Something went wrong. Please reload the page and try again.', 'neve' ),
+			'rollback_to_old'          => __( 'Want to roll back to the old builder?', 'neve' ),
+			'new_hfg_experience'       => __( "We've created a new Header/Footer Builder experience! You can always roll back to the old builder from right here.", 'neve' ),
+			'manual_adjust'            => __( 'Some manual adjustments may be required.', 'neve' ),
+			'reload'                   => __( 'Reload', 'neve' ),
+			'migrate'                  => __( 'Migrate Builders Data', 'neve' ),
+			'legacy_skin'              => __( 'Legacy Skin', 'neve' ),
+			'neve_30'                  => __( 'Neve 3.0', 'neve' ),
+			'switching_skin'           => __( 'Switching skin', 'neve' ),
+			'switch_skin'              => __( 'Switch Skin', 'neve' ),
+			'dismiss'                  => __( 'Dismiss', 'neve' ),
+			'rollback'                 => __( 'Roll Back', 'neve' ),
+			'scroll_to_top_desc'       => __( 'Add a customizable scroll-to-top button that appears exactly when needed. Style it to match your brand.', 'neve' ),
+			/* translators: %s - Module name for the upsell */
+			'upsell'                   => __( 'Unlock %s with the Pro version.', 'neve' ),
 		];
+	}
+
+	/**
+	 * Adds CSS rules to resolve .has-dynamicslug-color .has-dynamicslug-background-color classes.
+	 *
+	 * @param  string $current_styles Current dynamic style.
+	 * @param  string $context gutenberg|frontend Represents the type of the context.
+	 * @return string dynamic styles has resolving global custom colors
+	 */
+	public function css_global_custom_colors( $current_styles, $context ) {
+		if ( $context !== 'frontend' ) {
+			return $current_styles;
+		}
+
+		foreach ( Mods::get( Config::MODS_GLOBAL_CUSTOM_COLORS, [] ) as $slug => $args ) {
+			$css_var         = sprintf( 'var(--%s) !important', $slug );
+			$current_styles .= Dynamic_CSS::minify_css( sprintf( '.has-%s-color {color:%s} .has-%s-background-color {background-color:%s}', $slug, $css_var, $slug, $css_var ) );
+		}
+
+		return $current_styles;
+	}
+
+	/**
+	 * Add module css.
+	 *
+	 * @param string $css Current CSS style.
+	 * @param string $context Current context.
+	 *
+	 * @return string Altered CSS.
+	 */
+	public function css_scroll_to_top( $css, $context = 'frontend' ) {
+		if ( ! Scroll_To_Top::is_enabled() ) {
+			return $css;
+		}
+
+		if ( $context !== 'frontend' ) {
+			return $css;
+		}
+
+		$scroll_to_top_css = '.scroll-to-top {' . ( is_rtl() ? 'left: 20px;' : 'right: 20px;' ) . '
+			border: none;
+			position: fixed;
+			bottom: 30px;
+			display: none;
+			opacity: 0;
+			visibility: hidden;
+			transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+			align-items: center;
+			justify-content: center;
+			z-index: 999;
+		}
+		@supports (-webkit-overflow-scrolling: touch) {
+			.scroll-to-top {
+				bottom: 74px;
+			}
+		}
+		.scroll-to-top.image {
+			background-position: center;
+		}
+		.scroll-to-top .scroll-to-top-image {
+			width: 100%;
+		    height: 100%;
+		}
+		.scroll-to-top .scroll-to-top-label {
+			margin: 0;
+			padding: 5px;
+		}
+		.scroll-to-top:hover {
+			text-decoration: none;
+		}
+		.scroll-to-top.scroll-to-top-left {' . ( is_rtl() ? 'right: 20px; left: unset;' : 'left: 20px; right: unset;' ) . '}
+		.scroll-to-top.scroll-show-mobile {
+		  display: flex;
+		}
+		@media (min-width: 960px) {
+			.scroll-to-top {
+				display: flex;
+			}
+		}';
+
+		$scroll_to_top_css .= '.scroll-to-top {
+			color: var(--color);
+			padding: var(--padding);
+			border-radius: var(--borderradius);
+			background: var(--bgcolor);  
+		}
+
+		.scroll-to-top:hover, .scroll-to-top:focus {
+			color: var(--hovercolor);
+			background: var(--hoverbgcolor);
+		}
+
+		.scroll-to-top-icon, .scroll-to-top.image .scroll-to-top-image {
+			width: var(--size);
+			height: var(--size);
+		}
+
+		.scroll-to-top-image {
+			background-image: var(--bgimage);
+			background-size: cover;
+		}';
+
+		return $css . $scroll_to_top_css;
+	}
+
+	/**
+	 * Fix script translations language directory.
+	 *
+	 * @param string | false $file File path.
+	 * @param string         $handle Script handle.
+	 * @param string         $domain Script text domain.
+	 *
+	 * @return string | false
+	 */
+	public function fix_script_translation_files( $file, $handle, $domain ) {
+		if ( ! $file || $domain !== 'neve' ) {
+			return $file;
+		}
+
+		if ( is_file( $file ) ) {
+			return $file;
+		}
+
+		if ( strpos( $file, WP_LANG_DIR . '/plugins' ) !== false ) {
+			$file = str_replace( WP_LANG_DIR . '/plugins', WP_LANG_DIR . '/themes', $file );
+		}
+
+		return $file;
 	}
 }

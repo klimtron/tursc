@@ -8,9 +8,11 @@
 namespace Neve\Customizer\Options;
 
 use Neve\Customizer\Base_Customizer;
+use Neve\Customizer\Defaults\Layout;
 use Neve\Customizer\Defaults\Single_Post;
 use Neve\Customizer\Types\Control;
 use Neve\Customizer\Types\Section;
+use Neve\Core\Settings\Config;
 
 /**
  * Class Base_Layout_Single
@@ -18,8 +20,8 @@ use Neve\Customizer\Types\Section;
  * @package Neve\Customizer\Options
  */
 abstract class Base_Layout_Single extends Base_Customizer {
-
 	use Single_Post;
+	use Layout;
 	/**
 	 * Post type slug
 	 *
@@ -42,6 +44,13 @@ abstract class Base_Layout_Single extends Base_Customizer {
 	private $cover_selector;
 
 	/**
+	 * Is post type post.
+	 *
+	 * @var bool
+	 */
+	protected $is_post = false;
+
+	/**
 	 * Get the value for the $post_type.
 	 *
 	 * @return mixed
@@ -62,6 +71,8 @@ abstract class Base_Layout_Single extends Base_Customizer {
 		$this->post_type      = $this->get_post_type();
 		$this->cover_selector = $this->get_cover_selector();
 		$this->section        = 'neve_single_' . $this->post_type . '_layout';
+
+		$this->is_post = $this->post_type === 'post';
 	}
 
 	/**
@@ -86,14 +97,10 @@ abstract class Base_Layout_Single extends Base_Customizer {
 	 * @return void
 	 */
 	public function add_controls() {
-		if ( ! neve_is_new_skin() && $this->post_type !== 'post' ) {
-			return;
-		}
 		$this->create_section();
-		if ( neve_is_new_skin() ) {
-			$this->add_header_layout_subsection();
-			$this->add_header_layout_controls();
-		}
+		$this->add_header_layout_subsection();
+		$this->add_header_layout_controls();
+		$this->content_vspacing();
 	}
 
 	/**
@@ -106,7 +113,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 				[
 					'priority' => 40,
 					'title'    => $this->get_section_label(),
-					'panel'    => 'neve_layout',
+					'panel'    => $this->post_type === 'post' ? 'neve_blog' : 'neve_layout',
 				]
 			)
 		);
@@ -116,6 +123,10 @@ abstract class Base_Layout_Single extends Base_Customizer {
 	 * Add header layout accordion.
 	 */
 	private function add_header_layout_subsection() {
+		if ( $this->is_post ) {
+			return;
+		}
+
 		$this->add_control(
 			new Control(
 				'neve_' . $this->post_type . '_header_layout_heading',
@@ -149,6 +160,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'default'           => 'normal',
 				],
 				[
+					'label'    => $this->is_post ? esc_html__( 'Header Layout', 'neve' ) : '',
 					'section'  => $this->section,
 					'priority' => 10,
 					'choices'  => [
@@ -177,7 +189,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 				[
 					'label'                 => esc_html__( 'Cover height', 'neve' ),
 					'section'               => $this->section,
-					'type'                  => 'neve_responsive_range_control',
+					'type'                  => $this->is_post ? 'hidden' : 'neve_responsive_range_control',
 					'input_attrs'           => [
 						'max'        => 700,
 						'units'      => [ 'px', 'vh', 'em', 'rem' ],
@@ -234,6 +246,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 						),
 					],
 					'active_callback'       => [ $this, 'is_cover_layout' ],
+					'type'                  => $this->is_post ? 'hidden' : 'neve_spacing',
 				],
 				'\Neve\Customizer\Controls\React\Spacing'
 			)
@@ -251,21 +264,9 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'label'                 => esc_html__( 'Title Alignment', 'neve' ),
 					'section'               => $this->section,
 					'priority'              => 30,
-					'choices'               => [
-						'left'   => [
-							'tooltip' => esc_html__( 'Left', 'neve' ),
-							'icon'    => 'editor-alignleft',
-						],
-						'center' => [
-							'tooltip' => esc_html__( 'Center', 'neve' ),
-							'icon'    => 'editor-aligncenter',
-						],
-						'right'  => [
-							'tooltip' => esc_html__( 'Right', 'neve' ),
-							'icon'    => 'editor-alignright',
-						],
-					],
+					'choices'               => $this->get_title_alignment_choices(),
 					'show_labels'           => true,
+					'type'                  => $this->is_post ? 'hidden' : 'neve_responsive_radio_buttons_control',
 					'live_refresh_selector' => true,
 					'live_refresh_css_prop' => [
 						'cssVar' => [
@@ -322,6 +323,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 							'icon'    => 'arrow-down',
 						],
 					],
+					'type'                  => $this->is_post ? 'hidden' : 'neve_responsive_radio_buttons_control',
 					'live_refresh_selector' => true,
 					'live_refresh_css_prop' => [
 						'cssVar' => [
@@ -348,7 +350,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'transport'         => $this->selective_refresh,
 				],
 				[
-					'label'                 => esc_html__( 'Overlay color', 'neve' ),
+					'label'                 => esc_html__( 'Cover overlay color', 'neve' ),
 					'section'               => $this->section,
 					'priority'              => 45,
 					'input_attrs'           => [
@@ -376,7 +378,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'transport'         => $this->selective_refresh,
 				],
 				[
-					'label'                 => esc_html__( 'Text color', 'neve' ),
+					'label'                 => esc_html__( 'Cover text color', 'neve' ),
 					'section'               => $this->section,
 					'priority'              => 50,
 					'live_refresh_selector' => true,
@@ -412,6 +414,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 						'defaultVal' => 50,
 					],
 					'priority'              => 55,
+					'type'                  => $this->is_post ? 'hidden' : 'neve_range_control',
 					'live_refresh_selector' => true,
 					'live_refresh_css_prop' => [
 						'cssVar' => [
@@ -435,7 +438,7 @@ abstract class Base_Layout_Single extends Base_Customizer {
 				[
 					'label'           => esc_html__( 'Hide featured image', 'neve' ),
 					'section'         => $this->section,
-					'type'            => 'neve_toggle_control',
+					'type'            => $this->is_post ? 'hidden' : 'neve_toggle_control',
 					'priority'        => 60,
 					'active_callback' => [ $this, 'is_cover_layout' ],
 				],
@@ -455,22 +458,8 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'label'                 => esc_html__( 'Blend mode', 'neve' ),
 					'section'               => $this->section,
 					'priority'              => 65,
-					'type'                  => 'select',
-					'choices'               => [
-						'normal'      => esc_html__( 'Normal', 'neve' ),
-						'multiply'    => esc_html__( 'Multiply', 'neve' ),
-						'screen'      => esc_html__( 'Screen', 'neve' ),
-						'overlay'     => esc_html__( 'Overlay', 'neve' ),
-						'darken'      => esc_html__( 'Darken', 'neve' ),
-						'lighten'     => esc_html__( 'Lighten', 'neve' ),
-						'color-dodge' => esc_html__( 'Color Dodge', 'neve' ),
-						'saturation'  => esc_html__( 'Saturation', 'neve' ),
-						'color'       => esc_html__( 'Color', 'neve' ),
-						'difference'  => esc_html__( 'Difference', 'neve' ),
-						'exclusion'   => esc_html__( 'Exclusion', 'neve' ),
-						'hue'         => esc_html__( 'Hue', 'neve' ),
-						'luminosity'  => esc_html__( 'Luminosity', 'neve' ),
-					],
+					'type'                  => $this->is_post ? 'hidden' : 'select',
+					'choices'               => $this->get_blend_mode_choices(),
 					'live_refresh_selector' => true,
 					'live_refresh_css_prop' => [
 						'cssVar' => [
@@ -494,11 +483,8 @@ abstract class Base_Layout_Single extends Base_Customizer {
 					'label'           => esc_html__( 'Cover container', 'neve' ),
 					'section'         => $this->section,
 					'priority'        => 70,
-					'type'            => 'select',
-					'choices'         => [
-						'contained'  => esc_html__( 'Contained', 'neve' ),
-						'full-width' => esc_html__( 'Full width', 'neve' ),
-					],
+					'type'            => $this->is_post ? 'hidden' : 'select',
+					'choices'         => $this->get_container_width_choices(),
 					'active_callback' => function() {
 						return $this->post_type === 'post' ? $this->is_cover_layout() : $this->is_cover_layout() && ! get_theme_mod( 'neve_page_hide_title', false );
 					},
@@ -527,9 +513,151 @@ abstract class Base_Layout_Single extends Base_Customizer {
 	}
 
 	/**
+	 * Add content spacing control.
+	 */
+	private function content_vspacing() {
+
+		$this->add_control(
+			new Control(
+				'neve_' . $this->post_type . '_page_settings_heading',
+				[
+					'sanitize_callback' => 'sanitize_text_field',
+				],
+				[
+					'label'            => esc_html__( 'Page', 'neve' ) . ' ' . esc_html__( 'Settings', 'neve' ),
+					'section'          => $this->section,
+					'priority'         => 90,
+					'class'            => 'page-settings-accordion',
+					'expanded'         => false,
+					'accordion'        => true,
+					'controls_to_wrap' => 2,
+				],
+				'Neve\Customizer\Controls\Heading'
+			)
+		);
+
+		$this->add_control(
+			new Control(
+				'neve_' . $this->post_type . '_inherit_vspacing',
+				[
+					'sanitize_callback' => 'neve_sanitize_vspace_type',
+					'default'           => 'inherit',
+				],
+				[
+					'label'              => esc_html__( 'Content Vertical Spacing', 'neve' ),
+					'section'            => $this->section,
+					'priority'           => 95,
+					'choices'            => [
+						'inherit'  => [
+							'tooltip' => esc_html__( 'Inherit', 'neve' ),
+							'icon'    => 'text',
+						],
+						'specific' => [
+							'tooltip' => esc_html__( 'Custom', 'neve' ),
+							'icon'    => 'text',
+						],
+					],
+					'footer_description' => [
+						'inherit' => [
+							'template'         => esc_html__( 'Customize the default vertical spacing <ctaButton>here</ctaButton>.', 'neve' ),
+							'control_to_focus' => Config::MODS_CONTENT_VSPACING,
+						],
+					],
+				],
+				'\Neve\Customizer\Controls\React\Radio_Buttons'
+			)
+		);
+
+		$default_value = get_theme_mod( Config::MODS_CONTENT_VSPACING, $this->content_vspacing_default() );
+		$this->add_control(
+			new Control(
+				'neve_' . $this->post_type . '_content_vspacing',
+				[
+					'default'   => $default_value,
+					'transport' => $this->selective_refresh,
+				],
+				[
+					'label'                 => __( 'Custom Value', 'neve' ),
+					'sanitize_callback'     => [ $this, 'sanitize_spacing_array' ],
+					'section'               => $this->section,
+					'input_attrs'           => [
+						'units'     => [ 'px', 'vh' ],
+						'axis'      => 'vertical',
+						'dependsOn' => [ 'neve_' . $this->post_type . '_inherit_vspacing' => 'specific' ],
+					],
+					'default'               => $default_value,
+					'priority'              => 100,
+					'live_refresh_selector' => true,
+					'live_refresh_css_prop' => [
+						'cssVar'      => [
+							'vars'       => '--c-vspace',
+							'selector'   => 'body.' . $this->post_type . ' .neve-main',
+							'responsive' => true,
+							'fallback'   => '',
+						],
+						'directional' => true,
+					],
+				],
+				'\Neve\Customizer\Controls\React\Spacing'
+			)
+		);
+	}
+
+	/**
 	 * Fuction used for active_callback control property.
 	 *
 	 * @return bool
 	 */
 	abstract public static function is_cover_layout();
+
+	/**
+	 * @return array[]
+	 */
+	protected function get_title_alignment_choices(): array {
+		return [
+			'left'   => [
+				'tooltip' => esc_html__( 'Left', 'neve' ),
+				'icon'    => 'editor-alignleft',
+			],
+			'center' => [
+				'tooltip' => esc_html__( 'Center', 'neve' ),
+				'icon'    => 'editor-aligncenter',
+			],
+			'right'  => [
+				'tooltip' => esc_html__( 'Right', 'neve' ),
+				'icon'    => 'editor-alignright',
+			],
+		];
+	}
+
+	/**
+	 * @return array
+	 */
+	protected function get_blend_mode_choices(): array {
+		return [
+			'normal'      => esc_html__( 'Normal', 'neve' ),
+			'multiply'    => esc_html__( 'Multiply', 'neve' ),
+			'screen'      => esc_html__( 'Screen', 'neve' ),
+			'overlay'     => esc_html__( 'Overlay', 'neve' ),
+			'darken'      => esc_html__( 'Darken', 'neve' ),
+			'lighten'     => esc_html__( 'Lighten', 'neve' ),
+			'color-dodge' => esc_html__( 'Color Dodge', 'neve' ),
+			'saturation'  => esc_html__( 'Saturation', 'neve' ),
+			'color'       => esc_html__( 'Color', 'neve' ),
+			'difference'  => esc_html__( 'Difference', 'neve' ),
+			'exclusion'   => esc_html__( 'Exclusion', 'neve' ),
+			'hue'         => esc_html__( 'Hue', 'neve' ),
+			'luminosity'  => esc_html__( 'Luminosity', 'neve' ),
+		];
+	}
+
+	/**
+	 * @return array
+	 */
+	public function get_container_width_choices(): array {
+		return [
+			'contained'  => esc_html__( 'Contained', 'neve' ),
+			'full-width' => esc_html__( 'Full width', 'neve' ),
+		];
+	}
 }

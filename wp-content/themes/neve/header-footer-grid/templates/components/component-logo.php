@@ -12,7 +12,8 @@ namespace HFG;
 use HFG\Core\Builder\Header as HeaderBuilder;
 use HFG\Core\Components\Logo;
 
-$_id = current_component( HeaderBuilder::BUILDER_NAME )->get_id();
+$_id    = current_component( HeaderBuilder::BUILDER_NAME )->get_id();
+$device = current_device( HeaderBuilder::BUILDER_NAME );
 
 $show_name     = component_setting( Logo::SHOW_TITLE );
 $show_desc     = component_setting( Logo::SHOW_TAGLINE );
@@ -26,7 +27,7 @@ $conditional_logo = json_decode( component_setting( Logo::LOGO, Logo::sanitize_l
 $custom_logo_id   = isset( $conditional_logo['light'] ) ? $conditional_logo['light'] : $active_logo;
 
 $wrapper_tag = 'p';
-if ( get_option( 'show_on_front' ) === 'posts' && is_home() ) {
+if ( get_option( 'show_on_front' ) === 'posts' && is_home() && $device === 'desktop' ) {
 	$wrapper_tag = 'h1';
 }
 
@@ -43,12 +44,13 @@ if ( $show_desc ) {
 }
 $title_tagline .= '</div>';
 
+
+$aria_label = trim( get_bloginfo( 'name' ) . ' ' . get_bloginfo( 'description' ) );
 if ( $is_not_link ) {
-	$start_tag = '<span class="brand" title="' . get_bloginfo( 'name' ) . '" aria-label="' . get_bloginfo( 'name' ) . '">';
+	$start_tag = '<span class="brand" aria-label="' . esc_attr( $aria_label ) . '">';
 	$end_tag   = '</span>';
 } else {
-	$start_tag = '<a class="brand" href="' . esc_url( home_url( '/' ) ) . '" title="' . get_bloginfo( 'name' ) . '"
-			aria-label="' . get_bloginfo( 'name' ) . '">';
+	$start_tag = '<a class="brand" href="' . esc_url( home_url( '/' ) ) . '" aria-label="' . esc_attr( $aria_label ) . '" rel="home">';
 	$end_tag   = '</a>';
 }
 
@@ -105,4 +107,3 @@ do_action( 'hfg_after_wp_get_attachment_image', $custom_logo_id, $image );
 	echo ( $end_tag ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	?>
 </div>
-

@@ -104,7 +104,7 @@ class Post_Layout extends Base_View {
 					echo '<div class="nv-thumb-wrap">';
 					echo get_the_post_thumbnail(
 						null,
-						'neve-blog',
+						get_theme_mod( 'neve_post_thumbnail_size', 'neve-blog' ),
 						array( 'class' => $skip_lazy_class )
 					);
 					echo '</div>';
@@ -172,18 +172,7 @@ class Post_Layout extends Base_View {
 			return false;
 		}
 
-		/**
-		 * We replaced the old ordering control neve_post_meta_ordering with a repeater control named neve_single_post_meta_fields.
-		 * Because of that, we need to add some transformations:
-		 */
-
-		// Take the old control value and bring it to a form that can be used in a repeater.
-		$default_value = neve_get_default_meta_value( 'neve_post_meta_ordering', wp_json_encode( [ 'author', 'date', 'comments' ] ) );
-
-		// We need to get the value of the meta on blogs and pass it as default for meta on single.
-		$default_value = get_theme_mod( 'neve_blog_post_meta_fields', wp_json_encode( $default_value ) );
-
-		$meta_order = get_theme_mod( 'neve_single_post_meta_fields', $default_value );
+		$meta_order = get_theme_mod( 'neve_single_post_meta_fields', self::get_default_single_post_meta_fields() );
 		$meta_order = is_string( $meta_order ) ? json_decode( $meta_order ) : $meta_order;
 
 		// We take the result and apply the neve_post_meta_ordering_filter that allows us to add values in neve pro
@@ -222,7 +211,7 @@ class Post_Layout extends Base_View {
 	 * @return array
 	 */
 	private function get_content_order() {
-		$default_order = $this->post_ordering();
+		$default_order = $this->get_v4_defaults( 'neve_layout_single_post_elements_order', $this->post_ordering() );
 
 		$content_order = get_theme_mod( 'neve_layout_single_post_elements_order', wp_json_encode( $default_order ) );
 		if ( ! is_string( $content_order ) ) {

@@ -12,6 +12,7 @@ namespace Neve\Core;
 
 use Neve\Admin\Dashboard\Plugin_Helper;
 use Neve\Core\Settings\Mods_Migrator;
+use Neve\Core\Theme_Info;
 
 /**
  * Class Admin
@@ -19,6 +20,14 @@ use Neve\Core\Settings\Mods_Migrator;
  * @package Neve\Core
  */
 class Admin {
+	use Theme_Info;
+
+	/**
+	 * Launch progress option key.
+	 *
+	 * @var string
+	 */
+	public static $launch_progress_option = 'neve_show_launch_progress';
 
 	/**
 	 * Dismiss notice key.
@@ -26,12 +35,6 @@ class Admin {
 	 * @var string
 	 */
 	private $dismiss_notice_key = 'neve_notice_dismissed';
-	/**
-	 * Current theme name
-	 *
-	 * @var string $theme_name Theme name.
-	 */
-	private $theme_name;
 
 	/**
 	 * Theme Details
@@ -58,7 +61,6 @@ class Admin {
 			0
 		);
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_gutenberg_scripts' ] );
-		add_filter( 'themeisle_sdk_hide_dashboard_widget', '__return_true' );
 
 		if ( get_option( $this->dismiss_notice_key ) !== 'yes' ) {
 			add_action( 'admin_notices', [ $this, 'admin_notice' ], 0 );
@@ -70,14 +72,37 @@ class Admin {
 
 		add_filter( 'all_plugins', array( $this, 'change_plugin_names' ) );
 
-		add_action( 'after_switch_theme', array( $this, 'migrate_options' ) );
+		$this->auto_update_skin_and_builder();
 
-		$this->run_skin_and_builder_switches();
+		add_action( 'after_switch_theme', array( $this, 'migrate_options' ) );
 
 		add_filter( 'ti_tpc_theme_mods_pre_import', [ $this, 'migrate_theme_mods_for_new_skin' ] );
 
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_filter( 'neve_pro_react_controls_localization', [ $this, 'adapt_conditional_headers' ] );
+	}
+
+	/**
+	 * Automatic upgrade from legacy builder and skin on init.
+	 *
+	 * @return void
+	 */
+	private function auto_update_skin_and_builder() {
+		// If already on new skin bail.
+		if ( get_theme_mod( 'neve_new_skin' ) === 'new' || neve_was_auto_migrated_to_new() ) {
+			return;
+		}
+		set_theme_mod( 'neve_auto_migrated_to_new_skin', true );
+
+		$this->run_skin_and_builder_switches();
+
+		$migrator = new Builder_Migrator();
+		$response = $migrator->run();
+
+		if ( $response === true ) {
+			set_theme_mod( 'neve_migrated_builders', true );
+			set_theme_mod( 'neve_new_skin', 'new' );
+		}
 	}
 
 	/**
@@ -88,6 +113,7 @@ class Admin {
 	private function get_tpc_plugin_data() {
 		$plugin_helper = new Plugin_Helper();
 		$slug          = 'templates-patterns-collection';
+		$tpc_version   = $plugin_helper->get_plugin_version( $slug, false );
 
 		$tpc_plugin_data['nonce']      = wp_create_nonce( 'wp_rest' );
 		$tpc_plugin_data['slug']       = $slug;
@@ -95,11 +121,18 @@ class Admin {
 		$tpc_plugin_data['path']       = $plugin_helper->get_plugin_path( $slug );
 		$tpc_plugin_data['activate']   = $plugin_helper->get_plugin_action_link( $slug );
 		$tpc_plugin_data['deactivate'] = $plugin_helper->get_plugin_action_link( $slug, 'deactivate' );
-		$tpc_plugin_data['version']    = ! empty( $tpc_plugin_data['version'] ) ? $plugin_helper->get_plugin_version( $slug, $tpc_plugin_data['version'] ) : '';
-		$tpc_plugin_data['adminURL']   = admin_url( 'themes.php?page=tiob-starter-sites' );
+		$tpc_plugin_data['version']    = $tpc_version !== false ? $tpc_version : '';
+		$tpc_plugin_data['adminURL']   = add_query_arg(
+			array(
+				'page' => 'neve-onboarding',
+				'show' => 'welcome',
+			),
+			admin_url( 'admin.php' )
+		);
 		$tpc_plugin_data['pluginsURL'] = esc_url( admin_url( 'plugins.php' ) );
 		$tpc_plugin_data['ajaxURL']    = esc_url( admin_url( 'admin-ajax.php' ) );
 		$tpc_plugin_data['ajaxNonce']  = esc_attr( wp_create_nonce( 'remove_notice_confirmation' ) );
+		$tpc_plugin_data['canInstall'] = current_user_can( 'install_plugins' );
 
 		return $tpc_plugin_data;
 	}
@@ -117,7 +150,7 @@ class Admin {
 		if ( empty( $screen ) ) {
 			return;
 		}
-		if ( $screen->id !== 'dashboard' ) {
+		if ( ! in_array( $screen->id, [ 'dashboard', 'themes' ], true ) ) {
 			return;
 		}
 
@@ -127,10 +160,11 @@ class Admin {
 
 		wp_localize_script( 'neve-ss-notice', 'tpcPluginData', $this->get_tpc_plugin_data() );
 		wp_enqueue_script( 'neve-ss-notice' );
+		wp_set_script_translations( 'neve-ss-notice', 'neve' );
 	}
 
 	/**
-	 * Register script for react components.
+	 * Register the script for react components.
 	 */
 	public function register_react_components() {
 		$this->maybe_register_notice_script_starter_sites();
@@ -146,6 +180,21 @@ class Admin {
 				'customizerURL'           => esc_url( admin_url( 'customize.php' ) ),
 			]
 		);
+		wp_set_script_translations( 'neve-components', 'neve' );
+
+		if ( isset( $deps['chunks'] ) ) {
+			foreach ( $deps['chunks'] as $chunk_file ) {
+
+				$chunk_handle = 'neve-components-chunk-' . $chunk_file;
+				wp_register_script( $chunk_handle, trailingslashit( NEVE_ASSETS_URL ) . 'apps/components/build/' . $chunk_file, [], $deps['version'], true );
+				wp_enqueue_script( $chunk_handle );
+
+				if ( function_exists( 'wp_set_script_translations' ) ) {
+					wp_set_script_translations( $chunk_handle, 'neve' );
+				}
+			}
+		}
+
 		wp_register_style( 'neve-components', trailingslashit( NEVE_ASSETS_URL ) . 'apps/components/build/style-components.css', [ 'wp-components' ], $deps['version'] );
 		wp_add_inline_style( 'neve-components', Dynamic_Css::get_root_css() );
 	}
@@ -246,52 +295,263 @@ class Admin {
 	 */
 	public function register_rest_routes() {
 		register_rest_route(
-			'nv/migration',
-			'/new_header_builder',
-			array(
+			'nv/v1/dashboard',
+			'/plugin-state/(?P<slug>[a-z0-9-]+)',
+			[
 				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => [ $this, 'migrate_builders_data' ],
-				'permission_callback' => function () {
+				'callback'            => [ $this, 'get_plugin_state' ],
+				'permission_callback' => function() {
+					return ( current_user_can( 'install_plugins' ) && current_user_can( 'activate_plugins' ) );
+				},
+				'args'                => [
+					'slug' => [
+						'sanitize_callback' => 'sanitize_key',
+					],
+				],
+			]
+		);
+
+		register_rest_route(
+			'nv/v1/dashboard',
+			'/activate-plugin',
+			array(
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ $this, 'activate_plugin' ],
+				'permission_callback' => function() {
+					return ( current_user_can( 'install_plugins' ) && current_user_can( 'activate_plugins' ) );
+				},
+				'args'                => array(
+					'slug' => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'nv/v1/dashboard',
+			'/launch-progress',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ $this, 'save_launch_progress' ],
+				'permission_callback' => function() {
 					return current_user_can( 'manage_options' );
 				},
-			)
+				'args'                => array(
+					'progress' => array(
+						'required'          => true,
+						'sanitize_callback' => function( $value ) {
+							return is_array( $value ) ? $value : [];
+						},
+					),
+				),
+			]
+		);
+
+		register_rest_route(
+			'nv/v1/dashboard',
+			'/activate-module',
+			[
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => [ $this, 'activate_module' ],
+				'permission_callback' => function() {
+					return current_user_can( 'manage_options' );
+				},
+				'args'                => array(
+					'slug'  => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'value' => array(
+						'required'          => true,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			]
 		);
 	}
 
 	/**
-	 * Migration routine request.
+	 * Get any plugin's state.
 	 *
-	 * @param \WP_REST_Request $request the received request.
-	 *
-	 * @return \WP_REST_Response
-	 *
-	 * @since 3.0.0
+	 * @param  \WP_REST_Request $request Request details.
+	 * @return \WP_REST_Request|\WP_Error
 	 */
-	public function migrate_builders_data( \WP_REST_Request $request ) {
-		$is_rollback = $request->get_header( 'rollback' );
-		$is_dismiss  = $request->get_header( 'dismiss' );
+	public function get_plugin_state( \WP_REST_Request $request ) {
+		$slug = $request->get_param( 'slug' );
 
-		if ( $is_dismiss === 'yes' ) {
-			remove_theme_mod( 'hfg_header_layout' );
-			remove_theme_mod( 'hfg_footer_layout' );
+		$state = ( new Plugin_Helper() )->get_plugin_state( $slug );
 
-			return new \WP_REST_Response( [ 'success' => true ], 200 );
+		return rest_ensure_response(
+			[
+				'slug'  => $slug,
+				'state' => $state,
+			]
+		);
+	}
+
+	/**
+	 * Activate a plugin via REST API.
+	 *
+	 * @param \WP_REST_Request<array<string, mixed>> $request Request details.
+	 *
+	 * @return void
+	 */
+	public function activate_plugin( $request ) {
+		$slug = $request->get_param( 'slug' );
+
+		if ( empty( $slug ) ) {
+			return;
 		}
 
-		if ( $is_rollback === 'yes' ) {
-			set_theme_mod( 'neve_migrated_builders', false );
+		$plugin_helper = new Plugin_Helper();
+		$path          = $plugin_helper->get_plugin_path( $slug );
 
-			return new \WP_REST_Response( [ 'success' => true ], 200 );
+		if ( ! file_exists( WP_PLUGIN_DIR . '/' . $path ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+			require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+
+			/** @var object|\WP_Error $api */
+			$api = plugins_api(
+				'plugin_information',
+				array(
+
+					'slug'   => $slug,
+					'fields' => array( 'sections' => false ),
+				)
+			);
+
+			if ( is_wp_error( $api ) ) {
+				wp_send_json_error( array( 'message' => $api->get_error_message() ) );
+			}
+
+			if ( ! isset( $api->download_link ) ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid action', 'neve' ) ) );
+			}
+
+			$skin     = new \WP_Ajax_Upgrader_Skin();
+			$upgrader = new \Plugin_Upgrader( $skin );
+			$result   = $upgrader->install( $api->download_link );
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+
+			if ( $skin->get_errors()->has_errors() && is_wp_error( $skin->result ) ) {
+				if ( 'folder_exists' !== $skin->result->get_error_code() ) {
+					wp_send_json_error( array( 'message' => $skin->result->get_error_message() ) );
+				}
+			}
+
+			if ( ! $result ) {
+				global $wp_filesystem;
+
+				$status = [
+					'message' => __( 'Invalid action', 'neve' ),
+				];
+
+				if ( $wp_filesystem instanceof \WP_Filesystem_Base && $wp_filesystem->errors->has_errors() ) {
+					$status['message'] = esc_html( $wp_filesystem->errors->get_error_message() );
+				}
+
+				wp_send_json_error( $status );
+			}
 		}
 
-		$migrator = new Builder_Migrator();
-		$response = $migrator->run();
+		$result = activate_plugin( $path );
 
-		if ( $response === true ) {
-			set_theme_mod( 'neve_migrated_builders', true );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
-		return new \WP_REST_Response( [ 'success' => $response ], 200 );
+		wp_send_json_success( array( 'message' => __( 'Module Activated', 'neve' ) ) );
+	}
+
+	/**
+	 * Activate Orbit Fox module.
+	 *
+	 * @param  \WP_REST_Request<array<string, mixed>> $request Request details.
+	 * @return void
+	 */
+	public function activate_module( $request ) {
+		$module_slug  = $request->get_param( 'slug' );
+		$module_value = $request->get_param( 'value' );
+
+		if ( ! class_exists( 'Orbit_Fox_Global_Settings' ) ) {
+			wp_send_json_error( __( 'Invalid action', 'neve' ) );
+		}
+
+		$settings = new \Orbit_Fox_Global_Settings();
+		$modules  = $settings::$instance->module_objects;
+
+		if ( ! isset( $modules[ $module_slug ] ) ) {
+			wp_send_json_error( __( 'Invalid action', 'neve' ) );
+		}
+
+		$response = $modules[ $module_slug ]->set_status( 'active', $module_value );
+
+		wp_send_json_success( $module_value ? __( 'Module Activated', 'neve' ) : __( 'Module Deactivated.', 'neve' ) );
+	}
+
+	/**
+	 * Save launch progress state.
+	 *
+	 * @param \WP_REST_Request<array<string, mixed>> $request The request object.
+	 * @return \WP_REST_Response
+	 */
+	public function save_launch_progress( $request ) {
+		$progress = $request->get_param( 'progress' );
+
+		if ( ! is_array( $progress ) ) {
+			return new \WP_REST_Response(
+				[
+					'success' => false,
+					'message' => 'Invalid progress data',
+				],
+				400
+			);
+		}
+
+		// Validate progress structure
+		$valid_keys = [ 'identity', 'content', 'performance' ];
+		foreach ( $valid_keys as $key ) {
+			if ( ! isset( $progress[ $key ] ) || ! is_array( $progress[ $key ] ) ) {
+				return new \WP_REST_Response(
+					[
+						'success' => false,
+						'message' => 'Invalid progress structure',
+					],
+					400
+				);
+			}
+
+			// Validate all values are booleans
+			foreach ( $progress[ $key ] as $value ) {
+				if ( ! is_bool( $value ) ) {
+					return new \WP_REST_Response(
+						[
+							'success' => false,
+							'message' => 'Progress values must be boolean',
+						],
+						400
+					);
+				}
+			}
+		}
+
+		// Save to option
+		update_option( 'neve_launch_progress', $progress, false );
+
+		return new \WP_REST_Response(
+			[
+				'success' => true,
+				'message' => 'Progress saved',
+			],
+			200
+		);
 	}
 
 	/**
@@ -353,7 +613,7 @@ class Admin {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'install_plugins' ) ) {
 			return;
 		}
 
@@ -442,86 +702,99 @@ class Admin {
 		$theme_page = ! empty( $template ) ? $template . '-welcome' : $slug . '-welcome';
 
 		$notice_template = '
+			<style>%1$s</style>
 			<div class="nv-notice-wrapper">
-			%1$s
-			<hr/>
 				<div class="nv-notice-column-container">
 					<div class="nv-notice-column nv-notice-image">%2$s</div>
 					<div class="nv-notice-column nv-notice-starter-sites">%3$s</div>
-					<div class="nv-notice-column nv-notice-documentation">%4$s</div>
 				</div>
 			</div>
-			<style>%5$s</style>';
+		';
 
-		/* translators: 1 - notice title, 2 - notice message */
-		$notice_header = sprintf(
-			'<h2>%1$s</h2><p class="about-description">%2$s</p></hr>',
-			esc_html__( 'Congratulations!', 'neve' ),
-			sprintf(
-				/* translators: %s - theme name */
-				esc_html__( '%s is now installed and ready to use. We\'ve assembled some links to get you started.', 'neve' ),
-				$name
-			)
-		);
-		$ob_btn_link = admin_url( defined( 'TIOB_PATH' ) ? 'themes.php?page=tiob-starter-sites&onboarding=yes' : 'themes.php?page=' . $theme_page . '&onboarding=yes#starter-sites' );
-		$ob_btn      = sprintf(
-		/* translators: 1 - onboarding url, 2 - button text */
+		$ob_btn_link = admin_url( 'admin.php?page=' . $theme_page . '&onboarding=yes#starter-sites' );
+		if ( defined( 'TIOB_PATH' ) ) {
+			$ob_btn_link = add_query_arg(
+				array(
+					'page' => 'neve-onboarding',
+					'show' => 'welcome',
+				),
+				admin_url( 'admin.php' )
+			);
+		}
+
+		$onboarding_starter_sites_btn = sprintf(
 			'<a href="%1$s" class="button button-primary button-hero install-now" >%2$s</a>',
 			esc_url( $ob_btn_link ),
-			sprintf( apply_filters( 'ti_onboarding_neve_start_site_cta', esc_html__( 'Try one of our ready to use Starter Sites', 'neve' ) ) )
+			sprintf( apply_filters( 'ti_onboarding_neve_start_site_cta', esc_html__( "Let's Get Started with Starter Templates", 'neve' ) ) )
 		);
-		$ob_return_dashboard = sprintf(
-		/* translators: 1 - button text */
-			'<a href="' . esc_url( admin_url() ) . '" class=" ti-return-dashboard  button button-secondary button-hero install-now" ><span>%1$s</span></a>',
-			__( 'Return to your dashboard', 'neve' )
+
+		$onboarding_notice_exit_btn = sprintf(
+			'<a href="%1$s" class="ti-return-dashboard  button button-link button-hero" >
+				<span>%2$s</span>
+			</a>',
+			esc_url( admin_url( '?page=neve-welcome' ) ),
+			__( 'I want to build this website from scratch', 'neve' )
 		);
-		$options_page_btn = sprintf(
-		/* translators: 1 - options page url, 2 - button text */
-			'<a href="%1$s" class="options-page-btn">%2$s</a>',
-			esc_url( admin_url( 'themes.php?page=' . $theme_page ) ),
-			esc_html__( 'or go to the theme settings', 'neve' )
+
+		$onboarding_title_label = sprintf(
+			// translators: %s: the name of the theme (Neve Theme).
+			__( 'Thanks for downloading %s', 'neve' ),
+			__( 'Neve Theme', 'neve' )
+		) . ' 🎉';
+		$onboarding_dashboard_label = __( 'Explore a vast library of pre-designed sites within Neve. Visit our constantly growing collection of demos to find the perfect starting point for your project.', 'neve' );
+
+		$notice_starter_sites_container = sprintf(
+			'
+			<h2 class="nv-notice-title">%1$s</h2>
+			<p class="about-description">%2$s</h3>
+			<div class="nv-notice-actions">
+				<div id="neve-ss-install">
+					%3$s
+				</div>
+				%4$s
+			</div>
+			',
+			$onboarding_title_label,
+			$onboarding_dashboard_label,
+			$onboarding_starter_sites_btn,
+			$onboarding_notice_exit_btn
 		);
-		$notice_picture    = sprintf(
-			'<picture>
-					<source srcset="about:blank" media="(max-width: 1024px)">
-					<img src="%1$s"/>
-				</picture>',
+
+		$notice_picture = sprintf(
+			'<img src="%1$s"/>',
 			esc_url( $this->get_notice_picture() )
 		);
-		$notice_sites_list = sprintf(
-			'<div><h3><span class="dashicons dashicons-images-alt2"></span> %1$s</h3><p>%2$s</p><p>%3$s</p></div><div> <p id="neve-ss-install">%4$s</p><p>%5$s</p> </div>',
-			__( 'Sites Library', 'neve' ),
-			// translators: %s - Theme name
-				sprintf( esc_html__( '%s now comes with a sites library with various designs to pick from. Visit our collection of demos that are constantly being added.', 'neve' ), $name ),
-			esc_html( __( 'Install the template patterns plugin to get started.', 'neve' ) ),
-			$ob_btn,
-			$options_page_btn
-		);
-		$notice_documentation = sprintf(
-			'<div><h3><span class="dashicons dashicons-format-aside"></span> %1$s</h3><p>%2$s</p><a target="_blank" rel="external noopener noreferrer" href="%3$s"><span class="screen-reader-text">%4$s</span><svg xmlns="http://www.w3.org/2000/svg" focusable="false" role="img" viewBox="0 0 512 512" width="12" height="12" style="margin-right: 5px;"><path fill="currentColor" d="M432 320H400a16 16 0 0 0-16 16V448H64V128H208a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H48A48 48 0 0 0 0 112V464a48 48 0 0 0 48 48H400a48 48 0 0 0 48-48V336A16 16 0 0 0 432 320ZM488 0h-128c-21.4 0-32 25.9-17 41l35.7 35.7L135 320.4a24 24 0 0 0 0 34L157.7 377a24 24 0 0 0 34 0L435.3 133.3 471 169c15 15 41 4.5 41-17V24A24 24 0 0 0 488 0Z"/></svg>%5$s</a></div><div> <p>%6$s</p></div>',
-			__( 'Documentation', 'neve' ),
-			// translators: %s - Theme name
-				sprintf( esc_html__( 'Need more details? Please check our full documentation for detailed information on how to use %s.', 'neve' ), $name ),
-			'https://docs.themeisle.com/article/946-neve-doc',
-			esc_html__( '(opens in a new tab)', 'neve' ),
-			esc_html__( 'Read full documentation', 'neve' ),
-			$ob_return_dashboard
-		);
+
+		$elementor_logo = '<img src="' . esc_url( get_template_directory_uri() ) . '/assets/img/elementor.svg" />';
+		$gutenberg_logo = '<img src="' . esc_url( get_template_directory_uri() ) . '/assets/img/gutenberg.svg" />';
+
+		$notice_picture .= '<div class="overlay">';
+		$notice_picture .= '<span>';
+		$notice_picture .= '<strong>30+</strong> ' . __( 'Starter Sites', 'neve' );
+		$notice_picture .= '</span>';
+		$notice_picture .= '<div class="builder-logos">';
+		$notice_picture .= '<div class="builder-logo">' . $elementor_logo . '</div>';
+		$notice_picture .= '<div class="builder-logo">' . $gutenberg_logo . '</div>';
+		$notice_picture .= '</div>';
+		$notice_picture .= '</div>';
+
 		$style = '
-		.nv-notice-wrapper h2{
+		.nv-notice-wrapper .nv-notice-title {
+			font-size: 23px;
+			font-weight: bold;
+			line-height: 1.5;
 			margin: 0;
-			font-size: 21px;
-			font-weight: 400;
-			line-height: 1.2;
+			padding: 9px 0 4px;
 		}
 		.nv-notice-wrapper p.about-description{
 			color: #72777c;
-			font-size: 16px;
-			margin: 0;
-			padding:0px;
+			font-size: 15px;
+			margin: 2px 0 5px;
+			padding: 0 2px;
+			line-height: 1.6;
 		}
 		.nv-notice-wrapper{
-			padding: 23px 10px 0;
+			padding: 23px 10px;
 			max-width: 1500px;
 		}
 		.nv-notice-wrapper hr {
@@ -539,53 +812,126 @@ class Admin {
 		}
 		.nv-notice-text p.ti-return-dashboard {
 			margin-top: 30px;
-	}
-		.nv-notice-column-container .nv-notice-column{
-			 padding-right: 40px;
 		}
-		.nv-notice-column-container img{
-			margin-top: 23px;
-			width: calc(100% - 40px);
-			border: 1px solid #f3f4f5;
+		.nv-notice-column-container img {
+			max-height: 350px;
+		}
+		.nv-notice-image {
+			position: relative;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.nv-notice-image .overlay {
+			position: absolute;
+			bottom: 7px;
+			right: 15px;
+			background: rgba(0, 0, 0, 0.75);
+			color: white;
+			padding: 8px 8px 8px 16px;
+			border-radius: 50px;
+			font-weight: 500;
+			font-size: 14px;
+			backdrop-filter: blur(4px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+			z-index: 2;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.nv-notice-image .overlay .builder-logos {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.nv-notice-image .overlay .builder-logo img {
+			width: 30px;
+			border-radius: 100%;
+			border: 2px solid #fff;
+			background: #fff;
+		}
+
+		.nv-notice-image .builder-logo {
+			display: flex;
+			justify-content: center;
+			align-items: center;
 		}
 		.nv-notice-column-container {
-			display: -ms-grid;
-			display: grid;
-			-ms-grid-columns: 24% 32% 32%;
-			grid-template-columns: 24% 32% 32%;
-			margin-bottom: 13px;
+			display: flex;
+			flex-direction: row;
+			gap: 48px;
 		}
-		.nv-notice-column-container a.button.button-hero.button-secondary,
-		.nv-notice-column-container a.button.button-hero.button-primary{
-			margin:0px;
+		.nv-notice-column-container .button.button-hero:is( .button-primary, .button-link ) {
+			margin: 0px;
+			white-space: normal;
+			line-height: 1.2;
+			padding: 12px 36px;
+			text-align: center;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s ease-in-out;
 		}
-		.nv-notice-column-container .nv-notice-column:not(.nv-notice-image) {
-			display: -ms-grid;
-			display: grid;
-			-ms-grid-rows: auto 100px;
-			grid-template-rows: auto 100px;
-		}
-		@media screen and (max-width: 1280px) {
-			.nv-notice-wrapper .nv-notice-column-container {
-				-ms-grid-columns: 50% 50%;
-				grid-template-columns: 50% 50%;
-			}
-			.nv-notice-column-container a.button.button-hero.button-secondary,
-			.nv-notice-column-container a.button.button-hero.button-primary{
-				padding:6px 18px;
-			}
-			.nv-notice-wrapper .nv-notice-image {
-				display: none;
-			}
-		}
-		@media screen and (max-width: 870px) {
 
-			.nv-notice-wrapper .nv-notice-column-container {
-				-ms-grid-columns: 100%;
-				grid-template-columns: 100%;
+		.nv-notice-column-container .button.button-hero:is( .button-primary ) {
+			background: linear-gradient(90deg, #4559d9 0%,#6475e4 100%);
+			border: 0;
+    	box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+		}
+		
+		.nv-notice-column-container .button.button-hero:is( .button-primary ):hover {
+			box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+    	transform: translateY(-1px);
+		}
+
+		.nv-notice-column-container .button.button-hero:is( .button-link ) {
+			padding: 12px 7px;
+			color: #72777c;
+			text-decoration: none;
+		}
+
+		.nv-notice-column-container .button.button-hero:is( .button-link ):hover {
+			color:#5d6165;
+			background: transparent;
+		}
+		.nv-notice-column-container .nv-notice-column {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+		}
+		.nv-notice-actions {
+			display: flex;
+			flex-direction: row;
+			gap: 10px;
+			margin-top: 20px;
+		}
+		.nv-notice-starter-sites {
+			max-width: 750px;
+		}
+		@media (max-width: 1200px) {
+			.nv-notice-column-container {
+				flex-direction: column;
+				gap: 10px;
+				text-align: center;
+				align-items: center;
 			}
-			.nv-notice-column-container a.button.button-hero.button-primary{
-				padding:12px 36px;
+			.nv-notice-column-container .nv-notice-column {
+				align-items: center;
+			}
+
+			.nv-notice-actions {
+				display: grid;
+				gap: 10px;
+			}
+		}
+		@media (max-width: 480px) {
+			.nv-notice-actions {
+				flex-direction: column;
+				align-items: center;
 			}
 		}
 		@-webkit-keyframes spin {
@@ -610,11 +956,9 @@ class Admin {
 
 		echo sprintf(
 			$notice_template, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			$notice_header, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$style, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			$notice_picture, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			$notice_sites_list, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			$notice_documentation, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			$style // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$notice_starter_sites_container // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		);
 	}
 
@@ -644,7 +988,7 @@ class Admin {
 			true
 		);
 
-		$path = neve_is_new_skin() ? 'gutenberg-editor-style' : 'gutenberg-editor-legacy-style';
+		$path = 'gutenberg-editor-style';
 
 		wp_enqueue_style( 'neve-gutenberg-style', NEVE_ASSETS_URL . 'css/' . $path . ( ( NEVE_DEBUG ) ? '' : '.min' ) . '.css', array(), NEVE_VERSION );
 	}
@@ -656,7 +1000,7 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			function handleNoticeActions($) {
-				var actions = $('.nv-welcome-notice').find('.notice-dismiss,  .ti-return-dashboard, .install-now, .options-page-btn')
+				var actions = $('.nv-welcome-notice').find('.notice-dismiss, .ti-return-dashboard, .options-page-btn')
 				$.each(actions, function (index, actionButton) {
 					$(actionButton).on('click', function (e) {
 						e.preventDefault()

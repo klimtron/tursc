@@ -1,1 +1,1 @@
-<?php return array('dependencies' => array('lodash', 'wp-components', 'wp-element', 'wp-i18n', 'wp-media-utils', 'wp-primitives'), 'version' => 'd5b1dd5140525934184f1a2e330d711f');
+<?php return array('chunks' => array('7103f5233c04c878ae1a.js'),'dependencies' => array('lodash', 'wp-components', 'wp-element', 'wp-i18n', 'wp-media-utils', 'wp-primitives'), 'version' => 'a5bb0934f2c0d68b056361185d49db1f');

@@ -94,10 +94,11 @@ class Magic_Tags {
 			return $input;
 		}
 
-		if ( strpos( $input, 'http://{current_single_url}' ) !== false || strpos( $input, 'https://{current_single_url}' ) !== false ) {
-			$input = str_replace( 'http://{current_single_url}', '{current_single_url}', $input );
-			$input = str_replace( 'https://{current_single_url}', '{current_single_url}', $input );
-		}
+		// Define the regular expression to match http/https links containing magic tags
+		$regex = '/(https?:\/\/)(\{[^}]+\})/';
+
+		// Replace any matches with just the magic tag name
+		$input = preg_replace( $regex, '$2', $input );
 
 		return preg_replace_callback(
 			'/\\{\s?\b(?:' . self::$magic_tag_regex . ')\b\s?\\}/',
@@ -123,6 +124,10 @@ class Magic_Tags {
 
 		if ( ! method_exists( $this, $tag ) ) {
 			return '';
+		}
+
+		if ( $tag === 'current_single_content' ) {
+			return wp_kses_post( call_user_func( [ $this, $tag ] ) );
 		}
 
 		$allowed_tags = wp_kses_allowed_html();
@@ -186,9 +191,18 @@ class Magic_Tags {
 	}
 
 	/**
+	 * Single Post Content.
+	 *
+	 * @return string
+	 */
+	public function current_single_content() {
+		return is_singular() ? get_the_content() : '';
+	}
+
+	/**
 	 * Single Post meta.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function current_post_meta() {
 		ob_start();
@@ -202,7 +216,7 @@ class Magic_Tags {
 	/**
 	 * Meta author.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function meta_author() {
 		return '<span class="nv-dynamic-author-meta">' . Post_Meta::neve_get_author_meta() . '</span>';
@@ -211,7 +225,7 @@ class Magic_Tags {
 	/**
 	 * Meta date.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function meta_date() {
 		ob_start();
@@ -225,7 +239,7 @@ class Magic_Tags {
 	/**
 	 * Meta category.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function meta_category() {
 		return get_the_category_list( ', ', '', get_the_ID() );
@@ -234,7 +248,7 @@ class Magic_Tags {
 	/**
 	 * Meta comments.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function meta_comments() {
 		$comments = Post_Meta::get_comments();
@@ -244,7 +258,7 @@ class Magic_Tags {
 	/**
 	 * Meta time.
 	 *
-	 * @return string.
+	 * @return string
 	 */
 	public function meta_time_to_read() {
 		return apply_filters( 'neve_do_read_time', '' );
@@ -436,6 +450,9 @@ class Magic_Tags {
 	 * @return string
 	 */
 	public function user_nicename() {
+		/**
+		 * @var \WP_User|null $current_user
+		 */
 		$current_user = wp_get_current_user();
 		if ( empty( $current_user ) ) {
 			return '';
@@ -449,6 +466,9 @@ class Magic_Tags {
 	 * @return string
 	 */
 	public function display_name() {
+		/**
+		 * @var \WP_User|null $current_user
+		 */
 		$current_user = wp_get_current_user();
 		if ( empty( $current_user ) ) {
 			return '';
@@ -462,6 +482,9 @@ class Magic_Tags {
 	 * @return string
 	 */
 	public function user_email() {
+		/**
+		 * @var \WP_User|null $current_user
+		 */
 		$current_user = wp_get_current_user();
 		if ( empty( $current_user ) ) {
 			return '';
@@ -578,6 +601,10 @@ class Magic_Tags {
 					],
 					'current_single_excerpt' => [
 						'label' => __( 'Current Single Excerpt', 'neve' ),
+						'type'  => 'string',
+					],
+					'current_single_content' => [
+						'label' => __( 'Current Single Content', 'neve' ),
 						'type'  => 'string',
 					],
 					'current_single_url'     => [

@@ -7,6 +7,7 @@
  */
 
 use Neve_Pro\Modules\Header_Footer_Grid\Components\Icons;
+use HFG\Core\Components\Utility\SearchIconButton;
 
 /**
  * Check if we're delivering AMP
@@ -198,14 +199,32 @@ function neve_cart_icon( $echo = false, $size = 15, $cart_icon = '', $icon_custo
 /**
  * Search Icon
  *
- * @param bool $is_link should be wrapped in A tag.
- * @param bool $echo should be echoed.
- * @param int  $size icon size.
- * @param bool $amp_ready Should we add the AMP binding.
+ * @param bool         $is_link should be wrapped in A tag.
+ * @param bool         $echo should be echoed.
+ * @param int          $size icon size.
+ * @param bool         $amp_ready Should we add the AMP binding.
+ * @param false|string $context Represents where the search icon is being used.
  *
  * @return string|null
  */
-function neve_search_icon( $is_link = false, $echo = false, $size = 15, $amp_ready = false ) {
+function neve_search_icon( $is_link = false, $echo = false, $size = 15, $amp_ready = false, $context = false ) {
+
+	$icon_type = SearchIconButton::DEFAULT_ICON;
+
+	if ( $context === 'hfg' ) {
+		$hfg_icon_type = \HFG\component_setting( SearchIconButton::ICON_TYPE, SearchIconButton::DEFAULT_ICON );
+
+		// For the possibility of \HFG\current_component returning false
+		if ( $hfg_icon_type !== false ) {
+			$icon_type = $hfg_icon_type;
+		}
+	}
+
+	if ( $icon_type === SearchIconButton::CUSTOM_ICON ) {
+		$svg = \HFG\component_setting( SearchIconButton::CUSTOM_ICON_SVG, SearchIconButton::DEFAULT_CUSTOM_ICON_SVG );
+	} else {
+		$svg = SearchIconButton::render_icon( $icon_type, $size );
+	}
 
 	$amp_state = '';
 	if ( $amp_ready ) {
@@ -213,13 +232,13 @@ function neve_search_icon( $is_link = false, $echo = false, $size = 15, $amp_rea
 	}
 	$start_tag = $is_link ? 'a aria-label="' . __( 'Search', 'neve' ) . '" href="#"' : 'span';
 	$end_tag   = $is_link ? 'a' : 'span';
-	$svg       = '<' . $start_tag . ' class="nv-icon nv-search" ' . $amp_state . '>
-				<svg width="' . $size . '" height="' . $size . '" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1216 832q0-185-131.5-316.5t-316.5-131.5-316.5 131.5-131.5 316.5 131.5 316.5 316.5 131.5 316.5-131.5 131.5-316.5zm512 832q0 52-38 90t-90 38q-54 0-90-38l-343-342q-179 124-399 124-143 0-273.5-55.5t-225-150-150-225-55.5-273.5 55.5-273.5 150-225 225-150 273.5-55.5 273.5 55.5 225 150 150 225 55.5 273.5q0 220-124 399l343 343q37 37 37 90z"/></svg>
+	$output    = '<' . $start_tag . ' class="nv-icon nv-search" ' . $amp_state . '>
+				' . neve_kses_svg( $svg ) . '
 			</' . $end_tag . '>';
 	if ( $echo === false ) {
-		return $svg;
+		return $output;
 	}
-	echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	return null;
 }
 
@@ -262,9 +281,13 @@ function neve_get_svg_allowed_tags() {
 			'type' => true,
 		),
 		'g'        => array(
-			'fill'      => true,
-			'transform' => true,
-			'style'     => true,
+			'fill'            => true,
+			'transform'       => true,
+			'style'           => true,
+			'stroke'          => true,
+			'stroke-linecap'  => true,
+			'stroke-linejoin' => true,
+			'stroke-width'    => true,
 		),
 		'circle'   => array(
 			'cx'        => true,
@@ -283,15 +306,18 @@ function neve_get_svg_allowed_tags() {
 			'style'           => true,
 			'class'           => true,
 			'transform'       => true,
+			'stroke'          => true,
 			'stroke-linecap'  => true,
 			'stroke-linejoin' => true,
 			'stroke-width'    => true,
 		),
 		'polyline' => array(
-			'fill'         => true,
-			'stroke'       => true,
-			'stroke-width' => true,
-			'points'       => true,
+			'fill'            => true,
+			'stroke'          => true,
+			'stroke-linecap'  => true,
+			'stroke-linejoin' => true,
+			'stroke-width'    => true,
+			'points'          => true,
 		),
 		'polygon'  => array(
 			'class'     => true,
@@ -414,7 +440,7 @@ function neve_get_headings_selectors() {
 function neve_external_link( $link, $text = '', $echo = false ) {
 	$text          = empty( $text ) ? __( 'Learn More', 'neve' ) : $text;
 	$return        = sprintf(
-		'<a target="_blank" rel="external noopener noreferrer" href="' . esc_url( $link ) . '"><span class="screen-reader-text">%s</span><svg xmlns="http://www.w3.org/2000/svg" focusable="false" role="img" viewBox="0 0 512 512" width="12" height="12" style="margin-right: 5px;"><path fill="currentColor" d="M432 320H400a16 16 0 0 0-16 16V448H64V128H208a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H48A48 48 0 0 0 0 112V464a48 48 0 0 0 48 48H400a48 48 0 0 0 48-48V336A16 16 0 0 0 432 320ZM488 0h-128c-21.4 0-32 25.9-17 41l35.7 35.7L135 320.4a24 24 0 0 0 0 34L157.7 377a24 24 0 0 0 34 0L435.3 133.3 471 169c15 15 41 4.5 41-17V24A24 24 0 0 0 488 0Z"/></svg>%s</a>',
+		'<a target="_blank" rel="external noopener noreferrer" href="' . esc_url( $link ) . '"><span class="screen-reader-text">%s</span>%s <svg xmlns="http://www.w3.org/2000/svg" focusable="false" role="img" viewBox="0 0 512 512" width="12" height="12" style="margin-right: 5px;"><path fill="currentColor" d="M432 320H400a16 16 0 0 0-16 16V448H64V128H208a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H48A48 48 0 0 0 0 112V464a48 48 0 0 0 48 48H400a48 48 0 0 0 48-48V336A16 16 0 0 0 432 320ZM488 0h-128c-21.4 0-32 25.9-17 41l35.7 35.7L135 320.4a24 24 0 0 0 0 34L157.7 377a24 24 0 0 0 34 0L435.3 133.3 471 169c15 15 41 4.5 41-17V24A24 24 0 0 0 488 0Z"/></svg></a>',
 		esc_html__( '(opens in a new tab)', 'neve' ),
 		esc_html( $text )
 	);
@@ -438,55 +464,6 @@ add_filter( 'neve_external_link', 'neve_external_link', 10, 3 );
  * @return array
  */
 function neve_get_global_colors_default( $migrated = false ) {
-	if ( neve_is_new_skin() ) {
-		return [
-			'activePalette' => 'base',
-			'palettes'      => [
-				'base'     => [
-					'name'          => __( 'Base', 'neve' ),
-					'allowDeletion' => false,
-					'colors'        => [
-						'nv-primary-accent'   => '#2f5aae',
-						'nv-secondary-accent' => '#2f5aae',
-						'nv-site-bg'          => '#ffffff',
-						'nv-light-bg'         => '#f4f5f7',
-						'nv-dark-bg'          => '#121212',
-						'nv-text-color'       => '#272626',
-						'nv-text-dark-bg'     => '#ffffff',
-						'nv-c-1'              => '#9463ae',
-						'nv-c-2'              => '#be574b',
-					],
-				],
-				'darkMode' => [
-					'name'          => __( 'Dark Mode', 'neve' ),
-					'allowDeletion' => false,
-					'colors'        => [
-						'nv-primary-accent'   => '#00c2ff',
-						'nv-secondary-accent' => '#00c2ff',
-						'nv-site-bg'          => '#121212',
-						'nv-light-bg'         => '#1a1a1a',
-						'nv-dark-bg'          => '#000000',
-						'nv-text-color'       => '#ffffff',
-						'nv-text-dark-bg'     => '#ffffff',
-						'nv-c-1'              => '#198754',
-						'nv-c-2'              => '#be574b',
-					],
-				],
-			],
-		];
-	}
-
-	$old_link_color       = get_theme_mod( 'neve_link_color', '#0366d6' );
-	$old_link_hover_color = get_theme_mod( 'neve_link_hover_color', '#0e509a' );
-	$old_text_color       = get_theme_mod( 'neve_text_color', '#393939' );
-
-	// We use a static var to avoid calling get_theme_mod multiple times due to the filter used to alter the value.
-	static $old_bg_color;
-	if ( ! isset( $old_bg_color ) ) {
-		$old_bg_color = '#' . get_theme_mod( 'background_color', 'ffffff' );
-	}
-	add_filter( 'theme_mod_background_color', '__return_empty_string' );
-
 	return [
 		'activePalette' => 'base',
 		'palettes'      => [
@@ -494,30 +471,30 @@ function neve_get_global_colors_default( $migrated = false ) {
 				'name'          => __( 'Base', 'neve' ),
 				'allowDeletion' => false,
 				'colors'        => [
-					'nv-primary-accent'   => $migrated ? $old_link_color : '#0366d6',
-					'nv-secondary-accent' => $migrated ? $old_link_hover_color : '#0e509a',
-					'nv-site-bg'          => $migrated ? $old_bg_color : '#ffffff',
-					'nv-light-bg'         => '#ededed',
-					'nv-dark-bg'          => '#14171c',
-					'nv-text-color'       => $migrated ? $old_text_color : '#393939',
+					'nv-primary-accent'   => '#2f5aae',
+					'nv-secondary-accent' => '#2f5aae',
+					'nv-site-bg'          => '#ffffff',
+					'nv-light-bg'         => '#f4f5f7',
+					'nv-dark-bg'          => '#121212',
+					'nv-text-color'       => '#272626',
 					'nv-text-dark-bg'     => '#ffffff',
-					'nv-c-1'              => '#77b978',
-					'nv-c-2'              => '#f37262',
+					'nv-c-1'              => '#9463ae',
+					'nv-c-2'              => '#be574b',
 				],
 			],
 			'darkMode' => [
 				'name'          => __( 'Dark Mode', 'neve' ),
 				'allowDeletion' => false,
 				'colors'        => [
-					'nv-primary-accent'   => '#26bcdb',
-					'nv-secondary-accent' => '#1f90a6',
+					'nv-primary-accent'   => '#00c2ff',
+					'nv-secondary-accent' => '#00c2ff',
 					'nv-site-bg'          => '#121212',
 					'nv-light-bg'         => '#1a1a1a',
-					'nv-dark-bg'          => '#1a1a1a',
+					'nv-dark-bg'          => '#000000',
 					'nv-text-color'       => '#ffffff',
-					'nv-text-dark-bg'     => 'rgba(255, 255, 255, 0.81)',
-					'nv-c-1'              => '#77b978',
-					'nv-c-2'              => '#f37262',
+					'nv-text-dark-bg'     => '#ffffff',
+					'nv-c-1'              => '#198754',
+					'nv-c-2'              => '#be574b',
 				],
 			],
 		],
@@ -542,6 +519,17 @@ function neve_is_new_builder() {
  */
 function neve_is_new_skin() {
 	return get_theme_mod( 'neve_new_skin', 'new' ) !== 'old';
+}
+
+/**
+ * Checks if the instance was auto upgraded to the new skin.
+ * It is used to allow rollback for auto-upgraded instances.
+ *
+ * @return bool
+ * @since 3.6.x
+ */
+function neve_was_auto_migrated_to_new() {
+	return get_theme_mod( 'neve_auto_migrated_to_new_skin', false );
 }
 
 /**
@@ -719,48 +707,46 @@ function neve_get_default_meta_value( $field, $default ) {
 
 	$components = apply_filters(
 		'neve_meta_filter',
-		array(
+		[
 			'author'   => __( 'Author', 'neve' ),
 			'category' => __( 'Category', 'neve' ),
 			'date'     => __( 'Date', 'neve' ),
 			'comments' => __( 'Comments', 'neve' ),
-		)
+		]
 	);
 
 	$default_data = get_theme_mod( $field, $default );
-	if ( empty( $default_data ) ) {
-		return $new_control_data;
+
+	if ( is_string( $default_data ) ) {
+		$default_data = json_decode( $default_data, true );
 	}
 
-	$default_data = json_decode( $default_data, true );
 	if ( ! is_array( $default_data ) ) {
-		return $new_control_data;
+		$default_data = [];
 	}
 
 	foreach ( $default_data as $meta_component ) {
-		if ( ! array_key_exists( $meta_component, $components ) ) {
-			continue;
+		if ( array_key_exists( $meta_component, $components ) ) {
+			$new_control_data[ $meta_component ] = (object) [
+				'slug'           => $meta_component,
+				'title'          => $components[ $meta_component ],
+				'visibility'     => 'yes',
+				'hide_on_mobile' => false,
+				'blocked'        => 'yes',
+			];
 		}
-		$new_control_data[ $meta_component ] = (object) [
-			'slug'           => $meta_component,
-			'title'          => $components[ $meta_component ],
-			'visibility'     => 'yes',
-			'hide_on_mobile' => false,
-			'blocked'        => 'yes',
-		];
 	}
 
 	foreach ( $components as $component_id => $label ) {
-		if ( array_key_exists( $component_id, $new_control_data ) ) {
-			continue;
+		if ( ! array_key_exists( $component_id, $new_control_data ) ) {
+			$new_control_data[ $component_id ] = (object) [
+				'slug'           => $component_id,
+				'title'          => $label,
+				'visibility'     => 'no',
+				'hide_on_mobile' => false,
+				'blocked'        => 'yes',
+			];
 		}
-		$new_control_data[ $component_id ] = (object) [
-			'slug'           => $component_id,
-			'title'          => $label,
-			'visibility'     => 'no',
-			'hide_on_mobile' => false,
-			'blocked'        => 'yes',
-		];
 	}
 
 	return array_values( $new_control_data );
