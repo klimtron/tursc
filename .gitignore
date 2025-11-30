@@ -1,0 +1,74 @@
+﻿# Equipo theme files (contains sensitive data)
+/equipo/
+
+# WordPress Core
+/wp-admin/
+/wp-includes/
+/wp-content/index.php
+/wp-content/languages/
+/wp-content/plugins/index.php
+/wp-content/themes/index.php
+
+# WordPress Config
+wp-config.php
+wp-config-sample.php
+
+# Database
+*.sql
+*.sql.gz
+
+# Logs
+*.log
+/wp-content/debug.log
+
+# Uploads (jeśli nie chcesz wersjonować plików użytkowników)
+/wp-content/uploads/
+
+# Cache
+/wp-content/cache/
+/wp-content/upgrade/
+
+# Backup plugins
+/wp-content/ai1wm-backups/
+/wp-content/updraft/
+
+# Plugins (zakomentuj jeśli chcesz wersjonować własne pluginy)
+/wp-content/plugins/*
+!/wp-content/plugins/.gitkeep
+
+# Themes (wersjonuj tylko własne motywy)
+/wp-content/themes/twenty*/
+!/wp-content/themes/your-custom-theme/
+
+# Temporary files
+*.tmp
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Node modules
+node_modules/
+npm-debug.log
+
+# Composer
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# WordPress specific
+.htaccess
+sitemap.xml
+sitemap.xml.gz
